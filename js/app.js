@@ -164,7 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const reportsForm = document.getElementById('reportsForm');
   const reportsResultContainer = document.getElementById('reportsResultContainer');
   const exportReportBtn = document.getElementById('exportReportBtn');
-  // SELETOR DO BOTÃO AR
+  // Seletor do Botão AR
   const arBtn = document.getElementById('arBtn');
 
 
