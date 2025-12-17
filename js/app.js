@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const reportsForm = document.getElementById('reportsForm');
   const reportsResultContainer = document.getElementById('reportsResultContainer');
   const exportReportBtn = document.getElementById('exportReportBtn');
+  // SELETOR DO BOTÃO AR
   const arBtn = document.getElementById('arBtn');
 
 
@@ -212,10 +213,11 @@ document.addEventListener('DOMContentLoaded', () => {
     listenToCloudinaryConfigs(); 
     scheduleDailyLogout();
 
-    // Libera o Consultor AR para TODOS os usuários logados
-    if (arBtn) arBtn.classList.remove('hidden'); 
+    // === LÓGICA DE PERMISSÕES ===
+    // 1. O botão AR aparece para TODOS os usuários
+    if(arBtn) arBtn.classList.remove('hidden');
 
-    // Botões exclusivos do Admin (Thiago)
+    // 2. Botões exclusivos do Administrador (Thiago)
     if (user.name === 'Thiago Ventura Valencio') {
       adminBtn.classList.remove('hidden');
       reportsBtn.classList.remove('hidden');
@@ -1182,7 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
       }
   });
   
-  // Listener para o botão do Consultor AR
+  // Listener do Botão Consultor AR (Agora deve funcionar para todos)
   if (arBtn) {
     arBtn.addEventListener('click', () => {
         // Redireciona para a página do consultor
