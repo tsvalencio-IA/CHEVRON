@@ -1,10 +1,10 @@
-const CACHE_NAME = 'chevron-dashboard-v3.5'; // Versão crítica
+const CACHE_NAME = 'chevron-dashboard-v3.6-ultra-fast'; 
 const urlsToCache = [
     './',
     './index.html',
     './consultor.html',
     './css/styles.css',
-    './js/app.js',
+    './js/app.js', // Alteramos este arquivo
     './assets/targets.mind',
     './assets/mascote.mp4',
     './manifest.json',
