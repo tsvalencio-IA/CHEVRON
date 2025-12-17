@@ -1,12 +1,12 @@
-const CACHE_NAME = 'chevron-dashboard-v3.2'; // Versão atualizada para forçar reload
+const CACHE_NAME = 'chevron-dashboard-v3.3'; // Versão atualizada
 const urlsToCache = [
     './',
     './index.html',
-    './consultor.html', // IMPORTANTE
+    './consultor.html',
     './css/styles.css',
     './js/app.js',
-    './assets/targets.mind', // IMPORTANTE
-    './assets/mascote.mp4',  // IMPORTANTE
+    './assets/targets.mind',
+    './assets/mascote.mp4',
     './manifest.json',
     'https://cdn.tailwindcss.com',
     'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Orbitron:wght@500;700&display=swap',
