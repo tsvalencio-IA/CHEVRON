@@ -14,17 +14,19 @@
     <style>
         body { margin: 0; overflow: hidden; font-family: 'Roboto', sans-serif; }
         
-        /* Botão de Início Obrigatório para Mobile */
+        /* TELA DE INÍCIO OBRIGATÓRIA (CORREÇÃO PARA MOBILE) */
         #start-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.9); z-index: 9999;
-            display: flex; flex-direction: column; align-items: center; justify-content: center;
-            color: white; text-align: center;
+            background: black;
+            z-index: 99999; display: flex; flex-direction: column;
+            align-items: center; justify-content: center; text-align: center; color: white;
         }
+        
         #start-btn {
-            padding: 15px 30px; font-size: 20px; background: #2563eb; color: white;
-            border: none; border-radius: 50px; margin-top: 20px; cursor: pointer;
-            box-shadow: 0 0 15px rgba(37, 99, 235, 0.7); animation: pulse 1.5s infinite;
+            background: #2563eb; color: white; padding: 20px 40px;
+            font-size: 20px; font-weight: bold; border: none; border-radius: 50px;
+            margin-top: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(37, 99, 235, 0.8);
+            text-transform: uppercase; letter-spacing: 1px;
         }
 
         #ui-layer {
@@ -56,12 +58,14 @@
         input {
             flex-grow: 1; padding: 14px 20px; border-radius: 30px; border: none;
             outline: none; background: rgba(255, 255, 255, 0.95); font-size: 16px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         button.send-btn {
             width: 54px; height: 54px; border-radius: 50%; border: none;
             display: flex; align-items: center; justify-content: center;
             cursor: pointer; font-size: 24px; color: white; background-color: #2563eb;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.3);
         }
 
         #backBtn {
@@ -73,7 +77,7 @@
 
         #scan-overlay {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; z-index: 900; pointer-events: none; transition: opacity 0.5s; display: none; /* Começa oculto até clicar em iniciar */
+            text-align: center; z-index: 900; pointer-events: none; transition: opacity 0.5s; display: none;
         }
         .scan-box {
             width: 280px; height: 280px; border: 4px solid rgba(255, 255, 255, 0.8);
@@ -84,17 +88,15 @@
             text-shadow: 0 2px 4px black; background-color: rgba(0,0,0,0.6);
             padding: 8px 16px; border-radius: 8px; display: inline-block;
         }
-        .hidden { opacity: 0; pointer-events: none; display: none !important; }
-        
-        @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.05); } 100% { transform: scale(1); } }
+        .hidden { display: none !important; }
     </style>
 </head>
 <body>
 
     <div id="start-screen">
-        <i class='bx bx-cube-alt' style="font-size: 60px; margin-bottom: 10px;"></i>
-        <h1>Consultor Bosch AR</h1>
-        <p style="max-width: 300px; margin: 10px auto; color: #ccc;">Necessário acesso à câmera para ver o thIAguinho.</p>
+        <i class='bx bx-cube-alt' style="font-size: 80px; margin-bottom: 20px; color: #60a5fa;"></i>
+        <h1>Consultor AR</h1>
+        <p style="color: #cbd5e1; max-width: 300px; margin: 10px auto;">Toque em INICIAR para liberar a câmera.</p>
         <button id="start-btn">INICIAR SISTEMA</button>
     </div>
 
@@ -102,20 +104,20 @@
 
     <div id="scan-overlay">
         <div class="scan-box"></div>
-        <div class="scan-text">Aponte para o logo BOSCH</div>
+        <div class="scan-text">APONTE PARA O LOGO BOSCH</div>
     </div>
 
     <div id="ui-layer">
         <div class="chat-container">
             <div id="chat-display"></div>
             <div class="controls">
-                <input type="text" id="userInput" placeholder="Ex: Qual óleo do Onix 2020?" autocomplete="off">
+                <input type="text" id="userInput" placeholder="Ex: Qual o torque do Onix?" autocomplete="off">
                 <button id="sendBtn" class="send-btn"><i class='bx bxs-send'></i></button>
             </div>
         </div>
     </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind; uiScanning: #scan-overlay; filterMinCF:0.0001; filterBeta: 0.001; warmupTolerance: 5; missTolerance: 5" 
+    <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001" 
              color-space="sRGB" 
              renderer="colorManagement: true, physicallyCorrectLights" 
              vr-mode-ui="enabled: false" 
@@ -134,7 +136,7 @@
 
     <script>
         // ==========================================
-        // SEGURANÇA DA API KEY (DIVIDIDA)
+        // API KEY REAL (EXTRAÍDA DO SEU ARQUIVO)
         // ==========================================
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
         const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
@@ -147,38 +149,43 @@
         const chatDisplay = document.getElementById('chat-display');
         const userInput = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
-        const scanOverlay = document.getElementById('scan-overlay');
         const startScreen = document.getElementById('start-screen');
         const startBtn = document.getElementById('start-btn');
+        const scanOverlay = document.getElementById('scan-overlay');
 
         let isSpeaking = false;
         let isTargetVisible = false;
         let synthesis = window.speechSynthesis;
 
-        // INICIALIZAÇÃO CONTROLADA (Para funcionar no celular)
+        // INICIALIZAÇÃO CONTROLADA (CORREÇÃO DE ERRO DE CÂMERA)
         startBtn.addEventListener('click', () => {
             // 1. Ocultar tela de start
             startScreen.style.display = 'none';
             // 2. Mostrar guia de scan
             scanOverlay.style.display = 'block';
-            // 3. Desbloquear Audio Context (Truque para iOS)
-            const utterance = new SpeechSynthesisUtterance('');
-            synthesis.speak(utterance);
-            // 4. Iniciar Vídeo (Mudo)
+            
+            // 3. Desbloquear Audio Context (IOS/Android)
+            if (synthesis) {
+                const u = new SpeechSynthesisUtterance('');
+                synthesis.speak(u);
+            }
+
+            // 4. Iniciar Vídeo Mudo (Para carregar na memória)
             videoEl.play().then(() => {
                 videoEl.pause();
-            }).catch(e => console.log("Erro ao iniciar video:", e));
+            }).catch(e => console.log("Vídeo aguardando interação:", e));
         });
 
-        // Eventos AR
+        // Detector de Alvo
         targetEntity.addEventListener("targetFound", event => {
             console.log("Logo encontrado!");
             isTargetVisible = true;
             scanOverlay.classList.add('hidden');
-            if (isSpeaking) videoEl.play();
-            else {
+            if (isSpeaking) {
+                videoEl.play();
+            } else {
                 videoEl.pause();
-                videoEl.currentTime = 0;
+                videoEl.currentTime = 0; 
             }
         });
 
@@ -189,31 +196,21 @@
             videoEl.pause();
         });
 
-        // IA GEMINI 2.0 FLASH (Com Prompt Sênior)
+        // Função Gemini 2.0 Flash
         async function askGemini(text) {
             addMessage("Você", text, "msg-user");
             userInput.value = "";
-            const loadingMsg = addMessage("thIAguinho", "Consultando base técnica...", "msg-ai");
+            const loadingMsg = addMessage("thIAguinho", "Consultando...", "msg-ai");
 
             try {
-                // PROMPT DE ALTA PRECISÃO (ANTI-ALUCINAÇÃO)
                 const systemPrompt = `
-                    Você é o thIAguinho, Consultor Técnico Sênior da Bosch Car Service.
-                    CONTEXTO: Você está em uma oficina mecânica real conversando com mecânicos profissionais.
-                    
-                    SUA PERSONALIDADE:
-                    - Profissional, direto e extremamente técnico.
-                    - Não usa gírias de internet, usa termos da engenharia automotiva.
-                    - Jamais inventa dados. Se não souber o torque exato ou a peça, diga: "Recomendo consultar o manual de serviço para este chassi específico para garantir a segurança."
-                    
-                    SEUS DADOS:
-                    - Especialidade: Injeção eletrônica, mecânica diesel/ciclo otto e elétrica.
-                    - Peças: Recomende sempre códigos originais ou Bosch/Mann/Tecfil.
-                    
-                    FORMATO DA RESPOSTA:
-                    - Responda em português do Brasil.
-                    - Máximo de 3 frases curtas (para ser falado rapidamente).
-                    - Se for procedimento, resuma o primeiro passo.
+                    Você é o 'thIAguinho', o Consultor Técnico Sênior e Mascote da oficina Chevron Bosch Car Service.
+                    IDENTIDADE: Mecânico com 20 anos de experiência. Carismático, honesto e preciso.
+                    MISSÃO: Diagnosticar problemas automotivos e fornecer dados técnicos reais.
+                    REGRAS:
+                    1. Fale a verdade absoluta. Se não souber, diga "Preciso verificar o manual".
+                    2. Respostas curtas para serem faladas (máximo 3 frases).
+                    3. Use linguagem técnica de oficina.
                 `;
 
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
@@ -228,16 +225,16 @@
                 });
 
                 const data = await response.json();
-                loadingMsg.remove();
+                loadingMsg.remove(); 
 
                 if (data.error) throw new Error(data.error.message);
 
-                const aiText = data.candidates[0].content.parts[0].text;
-                addMessage("thIAguinho", aiText, "msg-ai");
-                speakAndAct(aiText);
+                const aiResponse = data.candidates[0].content.parts[0].text;
+                addMessage("thIAguinho", aiResponse, "msg-ai");
+                speakAndAct(aiResponse);
 
             } catch (error) {
-                loadingMsg.textContent = "Falha na conexão com a central.";
+                loadingMsg.textContent = "Erro na conexão. Tente novamente.";
                 console.error(error);
             }
         }
@@ -246,7 +243,7 @@
             synthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = 'pt-BR';
-            utterance.rate = 1.3; // Fala um pouco mais rápido e profissional
+            utterance.rate = 1.2; 
             
             utterance.onstart = () => {
                 isSpeaking = true;
@@ -265,8 +262,7 @@
         function addMessage(sender, text, className) {
             const div = document.createElement('div');
             div.className = `msg ${className}`;
-            // Remove markdown para texto puro
-            div.innerHTML = `<strong>${sender}:</strong><br>${text.replace(/\*\*/g, '').replace(/\*/g, '')}`; 
+            div.innerHTML = `<strong>${sender}:</strong><br>${text.replace(/\*\*/g, '')}`; 
             chatDisplay.appendChild(div);
             chatDisplay.scrollTop = chatDisplay.scrollHeight;
             return div;
