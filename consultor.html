@@ -12,15 +12,11 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
-        /* RESET TOTAL PARA EVITAR DESLOCAMENTO */
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000;
-        }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: #000; }
         
-        /* TELA DE START (Z-INDEX ALTO) */
         #start-screen {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: linear-gradient(135deg, #0f172a 0%, #1e3a8a 100%);
+            background: linear-gradient(135deg, #000 0%, #111 100%);
             z-index: 99999; display: flex; flex-direction: column;
             align-items: center; justify-content: center; text-align: center; color: white;
         }
@@ -32,22 +28,21 @@
             text-transform: uppercase; animation: pulse 2s infinite;
         }
 
-        /* INTERFACE FLUTUANTE (FIXED PARA NÃO EMPURRAR A AR) */
         #ui-layer {
             position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
             pointer-events: none; display: flex; flex-direction: column;
-            justify-content: flex-end; z-index: 10000; /* Acima da AR */
+            justify-content: flex-end; z-index: 10000;
         }
 
         .chat-container {
             pointer-events: auto;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.5) 100%);
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.6) 100%);
             padding: 15px; display: flex; flex-direction: column; gap: 10px;
-            padding-bottom: 30px; /* Espaço extra para iPhone */
+            padding-bottom: 30px;
         }
 
         #chat-display {
-            max-height: 30vh; overflow-y: auto; color: white;
+            max-height: 35vh; overflow-y: auto; color: white;
             text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px;
         }
 
@@ -62,7 +57,7 @@
 
         input {
             flex-grow: 1; padding: 14px; border-radius: 30px; border: none; outline: none;
-            background: rgba(255, 255, 255, 0.95); font-size: 16px;
+            background: rgba(255, 255, 255, 0.95); font-size: 16px; color: #000;
         }
 
         .icon-btn {
@@ -103,8 +98,8 @@
 
     <div id="start-screen">
         <i class='bx bx-cube-alt' style="font-size: 80px; margin-bottom: 20px; color: #60a5fa;"></i>
-        <h1>Consultor J.A.R.V.I.S.</h1>
-        <p style="color: #cbd5e1; max-width: 300px; margin: 10px auto;">Toque para alinhar Sistemas.</p>
+        <h1>Consultor Técnico</h1>
+        <p style="color: #cbd5e1; max-width: 300px; margin: 10px auto;">Toque em INICIAR para ativar o sistema.</p>
         <button id="start-btn">INICIAR</button>
     </div>
 
@@ -120,7 +115,7 @@
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn"><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Qual o problema?" autocomplete="off">
+                <input type="text" id="userInput" placeholder="Qual a falha?" autocomplete="off">
                 <button id="sendBtn" class="icon-btn"><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -144,13 +139,9 @@
     </a-scene>
 
     <script>
-        // ==========================================
-        // CONFIGURAÇÃO GEMINI (CHAVES REAIS)
-        // ==========================================
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
         const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
-        // ==========================================
 
         const videoEl = document.querySelector('#mascoteVideo');
         const targetEntity = document.querySelector('#target-entity');
@@ -167,33 +158,24 @@
         let synthesis = window.speechSynthesis;
         let voices = [];
 
-        // Carrega vozes com Retry (para garantir que a lista venha completa)
         function loadVoices() {
             voices = synthesis.getVoices();
-            if(voices.length === 0) {
-                setTimeout(loadVoices, 100);
-            }
         }
-        loadVoices();
         if (synthesis.onvoiceschanged !== undefined) synthesis.onvoiceschanged = loadVoices;
 
-        // --- INICIALIZAÇÃO ---
+        // INICIALIZAÇÃO
         startBtn.addEventListener('click', () => {
+            loadVoices();
             startScreen.style.display = 'none';
             scanOverlay.style.display = 'block';
             
-            // Força o carregamento das vozes no clique
-            loadVoices();
-            
-            // Hack para liberar áudio no iOS
             const u = new SpeechSynthesisUtterance('');
             synthesis.speak(u);
 
-            // Carrega vídeo
             videoEl.play().then(() => videoEl.pause()).catch(e => console.log(e));
         });
 
-        // --- RECONHECIMENTO DE VOZ (MICROFONE) ---
+        // MICROFONE
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
@@ -203,6 +185,7 @@
             micBtn.addEventListener('click', () => {
                 if (micBtn.classList.contains('listening')) {
                     recognition.stop();
+                    micBtn.classList.remove('listening');
                 } else {
                     recognition.start();
                     micBtn.classList.add('listening');
@@ -214,24 +197,24 @@
                 const text = event.results[0][0].transcript;
                 userInput.value = text;
                 micBtn.classList.remove('listening');
-                userInput.placeholder = "Enviando...";
-                askGemini(text); // Envia automático
+                userInput.placeholder = "Processando...";
+                askGemini(text);
             };
 
             recognition.onerror = () => {
                 micBtn.classList.remove('listening');
-                userInput.placeholder = "Erro ao ouvir. Tente digitar.";
+                userInput.placeholder = "Erro no áudio. Digite.";
             };
             
             recognition.onend = () => {
                 micBtn.classList.remove('listening');
-                userInput.placeholder = "Qual a dúvida?";
+                if(userInput.value === "") userInput.placeholder = "Qual a dúvida?";
             };
         } else {
-            micBtn.style.display = 'none'; // Oculta se navegador não suportar
+            micBtn.style.display = 'none';
         }
 
-        // --- AR EVENTS ---
+        // AR EVENTS
         targetEntity.addEventListener("targetFound", () => {
             isTargetVisible = true;
             scanOverlay.classList.add('hidden');
@@ -245,108 +228,93 @@
             videoEl.pause();
         });
 
-        // --- CÉREBRO: GEMINI 2.0 FLASH (PROMPT SÊNIOR) ---
+        // IA GEMINI 2.0 (MODO TÉCNICO)
         async function askGemini(text) {
             if(!text.trim()) return;
             addMessage("Você", text, "msg-user");
             userInput.value = "";
-            const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
+            const loadingMsg = addMessage("thIAguinho", "Analisando estratégia...", "msg-ai");
 
             try {
-                // PROMPT DE ENGENHARIA AUTOMOTIVA
+                // SEU PROMPT PODEROSO
                 const systemPrompt = `
-                   Você é o thIAguinho, a Inteligência Artificial Técnica Central da Chevron Bosch Car Service.
+                    Você é o thIAguinho, a Inteligência Artificial Técnica Central da Chevron Bosch Car Service.
 
-CARGO:
-Consultor Técnico Master em Diagnóstico Automotivo Avançado
-(Nível Engenharia Aplicada ao Reparo Real de Campo).
+                    CARGO:
+                    Consultor Técnico Master em Diagnóstico Automotivo Avançado
+                    (Nível Engenharia Aplicada ao Reparo Real de Campo).
 
-IDENTIDADE TÉCNICA:
-Você atua como a junção de:
-1. Engenharia de sistemas automotivos (Bosch, Siemens, Delphi, Denso).
-2. Engenharia de desenvolvimento de montadoras (lógica de ECU, estratégias de controle e critérios de DTC).
-3. Suporte técnico de fábrica / linha quente.
-4. Mecânico especialista de bancada com vivência real em falhas crônicas, defeitos intermitentes e retrabalho.
+                    IDENTIDADE TÉCNICA:
+                    Você atua como a junção de:
+                    1. Engenharia de sistemas automotivos (Bosch, Siemens, Delphi, Denso).
+                    2. Engenharia de desenvolvimento de montadoras (lógica de ECU, estratégias de controle e critérios de DTC).
+                    3. Suporte técnico de fábrica / linha quente.
+                    4. Mecânico especialista de bancada com vivência real em falhas crônicas, defeitos intermitentes e retrabalho.
 
-SUA MISSÃO:
-Guiar o mecânico até a CAUSA RAIZ do defeito com precisão cirúrgica, usando diagnóstico técnico real, evitando troca desnecessária de peças e eliminando tentativas.
+                    SUA MISSÃO:
+                    Guiar o mecânico até a CAUSA RAIZ do defeito com precisão cirúrgica, usando diagnóstico técnico real, evitando troca desnecessária de peças e eliminando tentativas.
 
-BASE DE CONHECIMENTO (REALISTA):
-- Estratégias de injeção, ignição, controle de mistura, partida, aquecimento e emissões.
-- Critérios de plausibilidade de sensores e atuadores.
-- Lógica de adaptação (STFT, LTFT, aprendizado).
-- Modos degradados e estratégias de proteção da ECU.
-- Falhas crônicas conhecidas do mercado de reparo brasileiro.
-- Procedimentos práticos usados em oficinas de alto nível.
-- Limitações reais: você NÃO tem acesso a bases pagas ou boletins internos privados.
+                    BASE DE CONHECIMENTO (REALISTA):
+                    - Estratégias de injeção, ignição, controle de mistura, partida, aquecimento e emissões.
+                    - Critérios de plausibilidade de sensores e atuadores.
+                    - Lógica de adaptação (STFT, LTFT, aprendizado).
+                    - Modos degradados e estratégias de proteção da ECU.
+                    - Falhas crônicas conhecidas do mercado de reparo brasileiro.
+                    - Procedimentos práticos usados em oficinas de alto nível.
+                    - Limitações reais: você NÃO tem acesso a bases pagas ou boletins internos privados.
 
-REGRAS ABSOLUTAS (SEM EXCEÇÃO):
-1. VERDADE TÉCNICA:
-   - Nunca chute.
-   - Nunca invente valores.
-   - Se o dado for específico por chassi (torque, folga, sequência):
-     Diga obrigatoriamente:
-     "Recomendo confirmar no manual técnico do veículo para segurança."
-   - Se existir valor médio confiável daquele SISTEMA ou MOTOR, informe apenas como referência técnica padrão, deixando isso explícito.
+                    REGRAS ABSOLUTAS (SEM EXCEÇÃO):
+                    1. VERDADE TÉCNICA:
+                    - Nunca chute.
+                    - Nunca invente valores.
+                    - Se o dado for específico por chassi (torque, folga, sequência):
+                    Diga obrigatoriamente:
+                    "Recomendo confirmar no manual técnico do veículo para segurança."
+                    - Se existir valor médio confiável daquele SISTEMA ou MOTOR, informe apenas como referência técnica padrão, deixando isso explícito.
 
-2. DIAGNÓSTICO ANTES DE PEÇA:
-   - Jamais indique substituição sem teste ou medição.
-   - Toda suspeita deve ser sustentada por dado mensurável.
+                    2. DIAGNÓSTICO ANTES DE PEÇA:
+                    - Jamais indique substituição sem teste ou medição.
+                    - Toda suspeita deve ser sustentada por dado mensurável.
 
-3. ESTRATÉGIA DE ECU:
-   - Sempre considere:
-     • condições de habilitação do sistema
-     • correlação entre sensores
-     • lógica de geração de DTC
-     • falhas elétricas x mecânicas x lógicas
-     • comportamento em modo de emergência
+                    3. ESTRATÉGIA DE ECU:
+                    - Sempre considere:
+                    • condições de habilitação do sistema
+                    • correlação entre sensores
+                    • lógica de geração de DTC
+                    • falhas elétricas x mecânicas x lógicas
+                    • comportamento em modo de emergência
 
-4. TESTES REAIS:
-   - Priorize sempre:
-     • inspeção visual
-     • scanner (parâmetros, status, freeze frame)
-     • multímetro (tensão, resistência, continuidade)
-     • pressão/vácuo
-     • osciloscópio (quando aplicável)
-   - Seja específico no teste sugerido.
+                    4. TESTES REAIS:
+                    - Priorize sempre:
+                    • inspeção visual
+                    • scanner (parâmetros, status, freeze frame)
+                    • multímetro (tensão, resistência, continuidade)
+                    • pressão/vácuo
+                    • osciloscópio (quando aplicável)
+                    - Seja específico no teste sugerido.
 
-5. SE INCONCLUSIVO:
-   - Solicite MAIS DADOS OBJETIVOS.
-   - Nunca finalize diagnóstico sem confirmação.
+                    5. SE INCONCLUSIVO:
+                    - Solicite MAIS DADOS OBJETIVOS.
+                    - Nunca finalize diagnóstico sem confirmação.
 
-FORMATO DE RESPOSTA (RIGOROSO):
-- Português do Brasil.
-- Linguagem técnica correta.
-- Sem didática, sem floreio.
-- Máximo de 3 frases curtas.
-- Direto como suporte técnico de fábrica em realidade aumentada.
-
-FLUXO OBRIGATÓRIO DE ATENDIMENTO:
-1️⃣ Sintomas exatos relatados e observados.
-2️⃣ Veículo completo: marca, modelo, ano, motorização, combustível.
-3️⃣ Histórico de reparos recentes.
-4️⃣ Leitura de DTCs e parâmetros relevantes.
-5️⃣ Testes direcionados.
-6️⃣ Confirmação da causa raiz.
-7️⃣ Só então orientação de reparo.
-
-POSTURA MENTAL:
-- Pense como engenheiro de sistema.
-- Raciocine como projetista da ECU.
-- Decida como consultor técnico Bosch.
-- Nunca como trocador de peças.
-
-LIMITES CLAROS:
-- Você não substitui manual técnico oficial.
-- Você não substitui diagnóstico profissional presencial.
-- Você atua como apoio técnico avançado ao mecânico.
+                    FORMATO DE RESPOSTA (RIGOROSO):
+                    - Português do Brasil.
+                    - Linguagem técnica correta.
+                    - Sem didática, sem floreio.
+                    - Máximo de 3 frases curtas.
+                    - Direto como suporte técnico de fábrica em realidade aumentada.
                 `;
 
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        contents: [{ role: "user", parts: [{ text: systemPrompt + "\nPERGUNTA TÉCNICA: " + text }] }]
+                        contents: [{ 
+                            role: "user",
+                            parts: [{ text: systemPrompt + "\n\nSINTOMA/PERGUNTA: " + text }] 
+                        }],
+                        // TEMPERATURA BAIXA PARA EVITAR ALUCINAÇÃO
+                        generationConfig: { temperature: 0.1 }
                     })
                 });
 
@@ -357,37 +325,35 @@ LIMITES CLAROS:
 
                 const aiText = data.candidates[0].content.parts[0].text;
                 addMessage("thIAguinho", aiText, "msg-ai");
-                speakMaleVoice(aiText); // CHAMA A VOZ FORÇADA
+                speakMaleVoice(aiText);
 
             } catch (error) {
-                loadingMsg.textContent = "Erro no sistema.";
+                loadingMsg.textContent = "Falha no sistema de diagnóstico.";
                 console.error(error);
             }
         }
 
-        // --- SÍNTESE DE VOZ MASCULINA FORÇADA ---
+        // --- VOZ MASCULINA FORÇADA (PITCH GRAVE) ---
         function speakMaleVoice(text) {
             synthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
             
-            // FILTRO DE VOZES: Procura exaustivamente por uma masculina
-            let selectedVoice = null;
+            // Tenta achar vozes masculinas no sistema
+            if (voices.length === 0) loadVoices();
             
-            const ptVoices = voices.filter(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-            
-            // Prioridade: Google Português > Daniel > Felipe > Qualquer um que não seja Luciana/Maria
-            selectedVoice = ptVoices.find(v => v.name.includes('Google português')) || 
-                            ptVoices.find(v => v.name.includes('Daniel')) ||
-                            ptVoices.find(v => v.name.includes('Felipe')) ||
-                            ptVoices.find(v => !v.name.includes('Luciana') && !v.name.includes('Maria'));
+            // Filtro de prioridade
+            const maleVoice = voices.find(v => 
+                (v.lang.includes('pt-BR') || v.lang.includes('pt_BR')) && 
+                (v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Felipe')) && 
+                !v.name.includes('Luciana')
+            );
 
-            if (selectedVoice) {
-                utterance.voice = selectedVoice;
-            }
+            if (maleVoice) utterance.voice = maleVoice;
 
-            // AJUSTE DE TIMBRE (PITCH)
-            utterance.pitch = 0.7; // Voz grossa
-            utterance.rate = 1.2;  // Rápido
+            // FORÇA BRUTA: Pitch 0.6 faz qualquer voz (mesmo feminina) parecer masculina/robô
+            utterance.pitch = 0.6; 
+            utterance.rate = 1.25; 
+            utterance.volume = 1.0;
 
             utterance.onstart = () => {
                 isSpeaking = true;
