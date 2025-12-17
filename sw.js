@@ -1,12 +1,12 @@
-const CACHE_NAME = 'chevron-dashboard-v2.0'; 
+const CACHE_NAME = 'chevron-dashboard-v3.0'; // VERSÃO ATUALIZADA PARA FORÇAR LIMPEZA NO CELULAR
 const urlsToCache = [
     './',
     './index.html',
-    './consultor.html', // IMPORTANTE: Adicionado
+    './consultor.html',
     './css/styles.css',
     './js/app.js',
-    './assets/targets.mind', // IMPORTANTE: Adicionado
-    './assets/mascote.mp4',  // IMPORTANTE: Adicionado
+    './assets/targets.mind',
+    './assets/mascote.mp4',
     './manifest.json',
     'https://cdn.tailwindcss.com',
     'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Orbitron:wght@500;700&display=swap',
@@ -20,20 +20,37 @@ const urlsToCache = [
 
 self.addEventListener('install', event => {
   self.skipWaiting(); 
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
+  event.waitUntil(
+    caches.open(CACHE_NAME)
+      .then(cache => {
+        console.log('Cache aberto: v3.0');
+        return cache.addAll(urlsToCache);
+      })
+  );
 });
 
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => Promise.all(
-        cacheNames.map(name => { if (name !== CACHE_NAME) return caches.delete(name); })
-    ))
+    caches.keys().then(cacheNames => {
+      return Promise.all(
+        cacheNames.map(cacheName => {
+          if (cacheName !== CACHE_NAME) {
+            console.log('Limpando cache antigo:', cacheName);
+            return caches.delete(cacheName);
+          }
+        })
+      );
+    })
   );
   return self.clients.claim();
 });
 
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
+    caches.match(event.request)
+      .then(response => {
+        if (response) return response;
+        return fetch(event.request);
+      })
   );
 });
