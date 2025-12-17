@@ -212,10 +212,13 @@ document.addEventListener('DOMContentLoaded', () => {
     listenToCloudinaryConfigs(); 
     scheduleDailyLogout();
 
+    // Libera o Consultor AR para TODOS os usuários logados
+    if (arBtn) arBtn.classList.remove('hidden'); 
+
+    // Botões exclusivos do Admin (Thiago)
     if (user.name === 'Thiago Ventura Valencio') {
       adminBtn.classList.remove('hidden');
       reportsBtn.classList.remove('hidden');
-      if(arBtn) arBtn.classList.remove('hidden');
     }
   };
 
