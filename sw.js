@@ -1,57 +1,39 @@
-const CACHE_NAME = 'chevron-dashboard-v1.1'; // Incrementamos a versão para forçar a atualização
+const CACHE_NAME = 'chevron-dashboard-v2.0'; 
 const urlsToCache = [
     './',
     './index.html',
+    './consultor.html', // IMPORTANTE: Adicionado
     './css/styles.css',
     './js/app.js',
+    './assets/targets.mind', // IMPORTANTE: Adicionado
+    './assets/mascote.mp4',  // IMPORTANTE: Adicionado
     './manifest.json',
-    './images/icons/icon-192x192.png',
-    './images/icons/icon-512x512.png',
     'https://cdn.tailwindcss.com',
     'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Orbitron:wght@500;700&display=swap',
     'https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css',
     'https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js',
     'https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js',
-    'https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js'
+    'https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js',
+    'https://aframe.io/releases/1.4.2/aframe.min.js',
+    'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js'
 ];
 
-// Instalação do Service Worker e cache dos assets
 self.addEventListener('install', event => {
-  self.skipWaiting(); // Força o novo SW a ativar mais rápido
-  event.waitUntil(
-    caches.open(CACHE_NAME)
-      .then(cache => {
-        console.log('Cache aberto, adicionando URLs principais.');
-        return cache.addAll(urlsToCache);
-      })
-  );
+  self.skipWaiting(); 
+  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
 });
 
-// Ativação do Service Worker e limpeza de caches antigos
 self.addEventListener('activate', event => {
   event.waitUntil(
-    caches.keys().then(cacheNames => {
-      return Promise.all(
-        cacheNames.map(cacheName => {
-          if (cacheName !== CACHE_NAME) {
-            console.log('Limpando cache antigo:', cacheName);
-            return caches.delete(cacheName);
-          }
-        })
-      );
-    })
+    caches.keys().then(cacheNames => Promise.all(
+        cacheNames.map(name => { if (name !== CACHE_NAME) return caches.delete(name); })
+    ))
   );
   return self.clients.claim();
 });
 
-// Intercepta as requisições (ESSENCIAL PARA INSTALAÇÃO)
 self.addEventListener('fetch', event => {
   event.respondWith(
-    caches.match(event.request)
-      .then(response => {
-        // Retorna do cache se encontrar, senão busca na rede
-        return response || fetch(event.request);
-      })
+    caches.match(event.request).then(response => response || fetch(event.request))
   );
 });
-
