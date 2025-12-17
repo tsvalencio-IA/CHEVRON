@@ -1,39 +1,279 @@
-const CACHE_NAME = 'chevron-dashboard-v3.3'; // Versão atualizada
-const urlsToCache = [
-    './',
-    './index.html',
-    './consultor.html',
-    './css/styles.css',
-    './js/app.js',
-    './assets/targets.mind',
-    './assets/mascote.mp4',
-    './manifest.json',
-    'https://cdn.tailwindcss.com',
-    'https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;700&family=Orbitron:wght@500;700&display=swap',
-    'https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css',
-    'https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js',
-    'https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js',
-    'https://www.gstatic.com/firebasejs/8.10.1/firebase-storage.js',
-    'https://aframe.io/releases/1.4.2/aframe.min.js',
-    'https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js'
-];
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Consultor Técnico Bosch - AR</title>
+    
+    <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
-self.addEventListener('install', event => {
-  self.skipWaiting(); 
-  event.waitUntil(caches.open(CACHE_NAME).then(cache => cache.addAll(urlsToCache)));
-});
+    <style>
+        body { margin: 0; overflow: hidden; font-family: 'Roboto', sans-serif; }
+        
+        #start-screen {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: black; z-index: 99999;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+            color: white; text-align: center;
+        }
+        
+        #start-btn {
+            background: #2563eb; color: white; padding: 20px 40px;
+            font-size: 20px; font-weight: bold; border: none; border-radius: 50px;
+            margin-top: 30px; cursor: pointer; box-shadow: 0 0 20px rgba(37, 99, 235, 0.8);
+            text-transform: uppercase;
+        }
 
-self.addEventListener('activate', event => {
-  event.waitUntil(
-    caches.keys().then(cacheNames => Promise.all(
-        cacheNames.map(name => { if (name !== CACHE_NAME) return caches.delete(name); })
-    ))
-  );
-  return self.clients.claim();
-});
+        #ui-layer {
+            position: absolute; bottom: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; display: flex; flex-direction: column;
+            justify-content: flex-end; z-index: 1000;
+        }
 
-self.addEventListener('fetch', event => {
-  event.respondWith(
-    caches.match(event.request).then(response => response || fetch(event.request))
-  );
-});
+        .chat-container {
+            pointer-events: auto;
+            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.4) 100%);
+            padding: 20px; display: flex; flex-direction: column; gap: 10px;
+        }
+
+        #chat-display {
+            max-height: 35vh; overflow-y: auto; color: white;
+            text-shadow: 1px 1px 2px black; margin-bottom: 10px;
+        }
+
+        .msg {
+            margin-bottom: 8px; padding: 10px 14px; border-radius: 12px;
+            font-size: 15px; line-height: 1.4; max-width: 90%;
+        }
+        .msg-user { background-color: rgba(37, 99, 235, 0.9); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
+        .msg-ai { background-color: rgba(22, 163, 74, 0.9); align-self: flex-start; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #4ade80; }
+
+        .controls { display: flex; gap: 10px; align-items: center; }
+
+        input {
+            flex-grow: 1; padding: 14px 20px; border-radius: 30px; border: none;
+            outline: none; background: rgba(255, 255, 255, 0.95); font-size: 16px;
+        }
+
+        button.send-btn {
+            width: 54px; height: 54px; border-radius: 50%; border: none;
+            display: flex; align-items: center; justify-content: center;
+            cursor: pointer; font-size: 24px; color: white; background-color: #2563eb;
+        }
+
+        #backBtn {
+            position: absolute; top: 20px; left: 20px; background-color: rgba(0,0,0,0.6);
+            width: 45px; height: 45px; pointer-events: auto; z-index: 1001;
+            border-radius: 50%; color: white; border: none; font-size: 26px;
+            display: flex; align-items: center; justify-content: center; cursor: pointer;
+        }
+
+        #scan-overlay {
+            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            text-align: center; z-index: 900; pointer-events: none; display: none;
+        }
+        .scan-box {
+            width: 280px; height: 280px; border: 4px solid rgba(255, 255, 255, 0.8);
+            border-radius: 24px; box-shadow: 0 0 25px rgba(37, 99, 235, 0.6);
+        }
+        .scan-text {
+            color: white; margin-top: 20px; font-weight: bold; font-size: 18px;
+            text-shadow: 0 2px 4px black; background-color: rgba(0,0,0,0.6);
+            padding: 8px 16px; border-radius: 8px; display: inline-block;
+        }
+        .hidden { display: none !important; }
+    </style>
+</head>
+<body>
+
+    <div id="start-screen">
+        <i class='bx bx-cube-alt' style="font-size: 80px; margin-bottom: 20px; color: #60a5fa;"></i>
+        <h1>Consultor AR</h1>
+        <p style="color: #cbd5e1; max-width: 300px; margin: 10px auto;">Toque para ativar Câmera e Voz.</p>
+        <button id="start-btn">INICIAR AGORA</button>
+    </div>
+
+    <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
+
+    <div id="scan-overlay">
+        <div class="scan-box"></div>
+        <div class="scan-text">APONTE PARA O LOGO BOSCH</div>
+    </div>
+
+    <div id="ui-layer">
+        <div class="chat-container">
+            <div id="chat-display"></div>
+            <div class="controls">
+                <input type="text" id="userInput" placeholder="Dúvida técnica..." autocomplete="off">
+                <button id="sendBtn" class="send-btn"><i class='bx bxs-send'></i></button>
+            </div>
+        </div>
+    </div>
+
+    <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001" 
+             color-space="sRGB" 
+             renderer="colorManagement: true, physicallyCorrectLights" 
+             vr-mode-ui="enabled: false" 
+             device-orientation-permission-ui="enabled: false">
+        
+        <a-assets>
+            <video id="mascoteVideo" src="./assets/mascote.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+        </a-assets>
+
+        <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
+
+        <a-entity mindar-image-target="targetIndex: 0" id="target-entity">
+            <a-plane src="#mascoteVideo" position="0 0 0" height="1.3" width="0.8" rotation="0 0 0" material="shader: flat; alphaTest: 0.5; transparent: true"></a-plane>
+        </a-entity>
+    </a-scene>
+
+    <script>
+        // ==========================================
+        // CONFIGURAÇÃO GEMINI (SUA CHAVE JÁ ESTÁ AQUI)
+        // ==========================================
+        const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
+        const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
+        const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
+        // ==========================================
+
+        const videoEl = document.querySelector('#mascoteVideo');
+        const targetEntity = document.querySelector('#target-entity');
+        const chatDisplay = document.getElementById('chat-display');
+        const userInput = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const startScreen = document.getElementById('start-screen');
+        const startBtn = document.getElementById('start-btn');
+        const scanOverlay = document.getElementById('scan-overlay');
+
+        let isSpeaking = false;
+        let isTargetVisible = false;
+        let synthesis = window.speechSynthesis;
+        let voiceList = [];
+
+        // Carrega vozes do sistema
+        function loadVoices() {
+            voiceList = synthesis.getVoices();
+        }
+        if (synthesis.onvoiceschanged !== undefined) {
+            synthesis.onvoiceschanged = loadVoices;
+        }
+
+        // START (Desbloqueio de Mídia)
+        startBtn.addEventListener('click', () => {
+            loadVoices(); // Garante que carregou
+            startScreen.style.display = 'none';
+            scanOverlay.style.display = 'block';
+            
+            // Hack para liberar áudio no iOS
+            const u = new SpeechSynthesisUtterance('');
+            synthesis.speak(u);
+
+            // Carrega vídeo
+            videoEl.play().then(() => videoEl.pause()).catch(e => console.log(e));
+        });
+
+        // Eventos AR
+        targetEntity.addEventListener("targetFound", () => {
+            isTargetVisible = true;
+            scanOverlay.classList.add('hidden');
+            if(isSpeaking) videoEl.play();
+            else { videoEl.pause(); videoEl.currentTime = 0; }
+        });
+
+        targetEntity.addEventListener("targetLost", () => {
+            isTargetVisible = false;
+            scanOverlay.classList.remove('hidden');
+            videoEl.pause();
+        });
+
+        // IA + Voz Masculina Gratuita
+        async function askGemini(text) {
+            if(!text.trim()) return;
+            addMessage("Você", text, "msg-user");
+            userInput.value = "";
+            const loadingMsg = addMessage("thIAguinho", "...", "msg-ai");
+
+            try {
+                const systemPrompt = `
+                    Você é o thIAguinho, Consultor Técnico Sênior da Bosch Car Service.
+                    Aja como um mecânico experiente, voz ativa, técnico e direto.
+                    Respostas curtas e faladas (máximo 2 frases).
+                    Nunca invente dados.
+                `;
+
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ role: "user", parts: [{ text: systemPrompt + "\nPergunta: " + text }] }]
+                    })
+                });
+
+                const data = await response.json();
+                loadingMsg.remove();
+
+                if (data.error) throw new Error(data.error.message);
+
+                const aiText = data.candidates[0].content.parts[0].text;
+                addMessage("thIAguinho", aiText, "msg-ai");
+                speakMaleVoice(aiText); // Chama a função de voz masculina
+
+            } catch (error) {
+                loadingMsg.textContent = "Erro na conexão.";
+                console.error(error);
+            }
+        }
+
+        // Função de Voz Otimizada (MASCULINA E GRAVE)
+        function speakMaleVoice(text) {
+            synthesis.cancel();
+            const utterance = new SpeechSynthesisUtterance(text);
+            
+            // Tenta encontrar uma voz masculina no celular/PC
+            // Procura por 'Google Português do Brasil' (geralmente masc/neutro) ou 'Daniel'
+            const maleVoice = voiceList.find(v => 
+                (v.lang.includes('pt-BR') || v.lang.includes('pt_BR')) && 
+                (v.name.includes('Male') || v.name.includes('Daniel') || v.name.includes('Felipe') || !v.name.includes('Luciana'))
+            );
+
+            if (maleVoice) {
+                utterance.voice = maleVoice;
+            }
+
+            // Ajustes para parecer mais "Mecânico Sênior"
+            utterance.lang = 'pt-BR';
+            utterance.pitch = 0.8; // Deixa a voz mais grossa (grave)
+            utterance.rate = 1.1;  // Fala um pouco mais firme e rápido
+
+            utterance.onstart = () => {
+                isSpeaking = true;
+                if (isTargetVisible) videoEl.play();
+            };
+
+            utterance.onend = () => {
+                isSpeaking = false;
+                videoEl.pause();
+                videoEl.currentTime = 0;
+            };
+
+            synthesis.speak(utterance);
+        }
+
+        function addMessage(sender, text, className) {
+            const div = document.createElement('div');
+            div.className = `msg ${className}`;
+            div.innerHTML = `<strong>${sender}:</strong><br>${text.replace(/\*\*/g, '')}`;
+            chatDisplay.appendChild(div);
+            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+            return div;
+        }
+
+        sendBtn.addEventListener('click', () => askGemini(userInput.value));
+        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendBtn.click(); });
+    </script>
+</body>
+</html>
