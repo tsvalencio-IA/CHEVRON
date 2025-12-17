@@ -1,4 +1,4 @@
-const CACHE_NAME = 'chevron-dashboard-v3.3'; // Versão atualizada
+const CACHE_NAME = 'chevron-dashboard-v3.5'; // Versão crítica
 const urlsToCache = [
     './',
     './index.html',
