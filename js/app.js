@@ -164,6 +164,7 @@ document.addEventListener('DOMContentLoaded', () => {
   const reportsForm = document.getElementById('reportsForm');
   const reportsResultContainer = document.getElementById('reportsResultContainer');
   const exportReportBtn = document.getElementById('exportReportBtn');
+  const arBtn = document.getElementById('arBtn');
 
 
   const formatStatus = (status) => status.replace(/-/g, ' ');
@@ -214,6 +215,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (user.name === 'Thiago Ventura Valencio') {
       adminBtn.classList.remove('hidden');
       reportsBtn.classList.remove('hidden');
+      if(arBtn) arBtn.classList.remove('hidden');
     }
   };
 
@@ -1176,7 +1178,14 @@ document.addEventListener('DOMContentLoaded', () => {
           exportOsToPrint(osId);
       }
   });
-
+  
+  // Listener para o botão do Consultor AR
+  if (arBtn) {
+    arBtn.addEventListener('click', () => {
+        // Redireciona para a página do consultor
+        window.location.href = 'consultor.html';
+    });
+  }
 
   // --- INICIALIZAÇÃO DO LOGIN ---
   initializeLoginScreen();
