@@ -314,35 +314,58 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             const searchTerm = text.toUpperCase();
             
             // Busca o carro no array workshopData populado pelo Firebase
-            // 1. Encontra TODOS os veículos que batem com a pesquisa
-            const possibleMatches = workshopData.filter(car => 
+            // 1. Busca TODOS os registros que batem com a Placa ou Modelo
+            const allRecords = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa)) || 
                 (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
             );
 
-            // 2. Ordena do mais RECENTE para o mais ANTIGO
-            // Assim, se tiver um carro "Em Atendimento" (mais novo) e um "Entregue" (velho), ele pega o novo.
-            possibleMatches.sort((a, b) => {
-                const dateA = new Date(a.lastUpdate || a.createdAt || 0);
-                const dateB = new Date(b.lastUpdate || b.createdAt || 0);
-                return dateB - dateA; // Ordem decrescente
-            });
+            if (allRecords.length > 0) {
+                // 2. Ordena do MAIS ANTIGO para o MAIS NOVO (Linha do Tempo para ler a história)
+                allRecords.sort((a, b) => {
+                    const dateA = new Date(a.createdAt || 0);
+                    const dateB = new Date(b.createdAt || 0);
+                    return dateA - dateB; 
+                });
 
-            // 3. Pega o primeiro da lista (o mais atual)
-            const foundVehicle = possibleMatches[0];
+                // 3. O "Carro Atual" é o último da lista (o mais recente)
+                const currentVehicle = allRecords[allRecords.length - 1];
 
-            if (foundVehicle) {
-                const logsResumo = foundVehicle.logs ? Object.values(foundVehicle.logs).slice(-3).map(l => `${l.user}: ${l.description}`).join(' | ') : "Sem histórico recente";
+                // 4. Constrói o Dossiê Completo (Varrendo todas as passagens antigas)
+                let dossieHistorico = "";
                 
+                allRecords.forEach((os, index) => {
+                    // Pega as peças citadas nos logs dessa OS específica
+                    const pecasDestaOS = os.logs ? Object.values(os.logs)
+                        .filter(l => l.parts) // Só logs que tiveram peças registradas
+                        .map(l => l.parts)
+                        .join(', ') : "Nenhuma peça registrada";
+
+                    const dataOS = new Date(os.createdAt).toLocaleDateString('pt-BR');
+                    
+                    dossieHistorico += `
+                    --- PASSAGEM ${index + 1} (${dataOS}) ---
+                    Status Final: ${os.status}
+                    KM na época: ${os.km || 'N/A'}
+                    Peças/Serviços: ${pecasDestaOS}
+                    --------------------------------`;
+                });
+
+                // 5. Monta o Prompt para a IA agir como Auditora
                 contextInjection = `
-                [DADOS INTERNOS DO SISTEMA CHEVRON]
-                Veículo Identificado: ${foundVehicle.modelo} (Placa: ${foundVehicle.placa})
-                Status Atual: ${foundVehicle.status.replace(/-/g, ' ')}
-                Cliente: ${foundVehicle.cliente}
-                KM: ${foundVehicle.km || 'N/A'}
-                Histórico Recente: ${logsResumo}
+                [DOSSIÊ TÉCNICO COMPLETO DO VEÍCULO - ORDEM CRONOLÓGICA]
+                Veículo: ${currentVehicle.modelo} (Placa: ${currentVehicle.placa})
+                Cliente: ${currentVehicle.cliente}
                 
-                INSTRUÇÃO: O usuário está perguntando sobre este carro. Use os dados acima para responder.
+                HISTÓRICO DE MANUTENÇÕES NA OFICINA:
+                ${dossieHistorico}
+                
+                STATUS ATUAL (HOJE): ${currentVehicle.status.replace(/-/g, ' ')}
+                
+                MISSÃO CRÍTICA: Você é o Guardião da Qualidade e Auditor Técnico.
+                1. Se o usuário perguntar sobre um serviço, VERIFIQUE NO HISTÓRICO ACIMA se já foi feito recentemente.
+                2. Se sugerirem trocar uma peça que já foi trocada há pouco tempo (ex: "Bieleta"), ALERTE IMEDIATAMENTE sobre a garantia/duplicidade citando a data da troca anterior.
+                3. Use os dados acima para responder com precisão absoluta sobre o histórico do carro.
                 `;
             }
 
