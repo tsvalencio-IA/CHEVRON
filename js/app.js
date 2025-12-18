@@ -314,7 +314,101 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('') : `<div class="col-span-full text-center py-8 text-gray-400"><p class="text-sm">Sem mídia</p></div>`;
   };
 
-  const exportOsToPrint = (osId) => { const os = allServiceOrders[osId]; if (!os) return; const w = window.open('', '_blank'); w.document.write(`<html><body><h1>${os.placa}</h1><p>Cliente: ${os.cliente}</p></body></html>`); w.document.close(); };
+  const exportOsToPrint = (osId) => {
+    const os = allServiceOrders[osId];
+    if (!os) { showNotification('Dados da O.S. não encontrados.', 'error'); return; }
+    
+    const formatDate = (isoString) => {
+        if (!isoString) return 'N/A';
+        return new Date(isoString).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
+    };
+
+    const logs = os.logs ? Object.values(os.logs).sort((a,b) => new Date(a.timestamp) - new Date(b.timestamp)) : [];
+    let totalValue = 0;
+    
+    const timelineHtml = logs.map(log => {
+        if (log.value) { totalValue += parseFloat(log.value); }
+        return `<tr>
+            <td>${formatDate(log.timestamp)}</td>
+            <td>${log.user}</td>
+            <td>${log.description}</td>
+            <td>${log.parts || '---'}</td>
+            <td style="text-align: right;">${log.value ? `R$ ${parseFloat(log.value).toFixed(2)}` : '---'}</td>
+        </tr>`;
+    }).join('');
+
+    // Filtra apenas imagens para impressão
+    const media = os.media ? Object.values(os.media) : [];
+    const photos = media.filter(item => item && item.type && item.type.startsWith('image/'));
+    const photosHtml = photos.length > 0 
+        ? `<div class="section"><h2>Registros Fotográficos</h2><div class="photo-gallery">${photos.map(photo => `<img src="${photo.url}" alt="Foto da O.S.">`).join('')}</div></div>` 
+        : '';
+
+    const printHtml = `
+    <html>
+    <head>
+        <title>Ordem de Serviço - ${os.placa}</title>
+        <style>
+            body{font-family:sans-serif;margin:0;padding:20px;color:#333}
+            .container{max-width:800px;margin:auto}
+            .header{text-align:center;border-bottom:2px solid #000;padding-bottom:10px;margin-bottom:20px}
+            .header h1{margin:0;font-size:24px;color:#1d4ed8}.header p{margin:5px 0}
+            .section{margin-bottom:20px;border:1px solid #ccc;border-radius:8px;padding:15px;page-break-inside:avoid}
+            .section h2{margin-top:0;font-size:18px;border-bottom:1px solid #eee;padding-bottom:5px;margin-bottom:10px;color:#444}
+            .grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+            .grid-item strong{color:#555}
+            table{width:100%;border-collapse:collapse;margin-top:10px}
+            th,td{border:1px solid #ddd;padding:8px;text-align:left;font-size:12px}
+            th{background-color:#f2f2f2}
+            .total{text-align:right;font-size:18px;font-weight:bold;margin-top:20px}
+            .photo-gallery{display:grid;grid-template-columns:repeat(3, 1fr);gap:10px;margin-top:10px}
+            .photo-gallery img{width:100%;height:150px;object-fit:cover;border:1px solid #ddd;border-radius:4px}
+            .footer{text-align:center;margin-top:50px;padding-top:20px;border-top:1px solid #ccc}
+            .signature-line{border-bottom:1px solid #000;width:300px;margin:50px auto 10px auto}
+            @media print{.no-print{display:none}}
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <div class="header">
+                <h1>CHEVRON Bosch Car Service</h1>
+                <p>Relatório Técnico de Manutenção</p>
+            </div>
+            <div class="section">
+                <h2>Dados do Veículo e Cliente</h2>
+                <div class="grid">
+                    <div class="grid-item"><strong>Placa:</strong> ${os.placa}</div>
+                    <div class="grid-item"><strong>Modelo:</strong> ${os.modelo}</div>
+                    <div class="grid-item"><strong>Cliente:</strong> ${os.cliente}</div>
+                    <div class="grid-item"><strong>Telefone:</strong> ${os.telefone||"N/A"}</div>
+                    <div class="grid-item"><strong>KM Atual:</strong> ${os.km?new Intl.NumberFormat("pt-BR").format(os.km):"N/A"}</div>
+                    <div class="grid-item"><strong>Abertura:</strong> ${formatDate(os.createdAt)}</div>
+                </div>
+            </div>
+            ${os.observacoes ? `<div class="section"><h2>Queixa do Cliente</h2><p>${os.observacoes}</p></div>` : ""}
+            <div class="section">
+                <h2>Histórico de Serviços e Peças</h2>
+                <table>
+                    <thead><tr><th>Data</th><th>Técnico</th><th>Descrição</th><th>Peças</th><th style="text-align:right;">Valor</th></tr></thead>
+                    <tbody>${timelineHtml||'<tr><td colspan="5" style="text-align:center;">Sem registros.</td></tr>'}</tbody>
+                </table>
+                <div class="total">Total Estimado: R$ ${totalValue.toFixed(2)}</div>
+            </div>
+            ${photosHtml}
+            <div class="footer">
+                <div class="signature-line"></div>
+                <p>Assinatura do Responsável / Cliente</p>
+                <p style="font-size:10px;color:#888;margin-top:20px">Documento gerado em: ${new Date().toLocaleString("pt-BR")}</p>
+            </div>
+        </div>
+        <script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}<\/script>
+    </body>
+    </html>`;
+    
+    const printWindow = window.open('', '_blank');
+    printWindow.document.write(printHtml);
+    printWindow.document.close();
+  };
   const openLightbox = (idx) => { currentLightboxIndex = idx; const m = lightboxMedia[idx]; if(!m) return; if(m.type==='application/pdf'){ window.open(m.url); return; } document.getElementById('lightbox-content').innerHTML = m.type.startsWith('image')?`<img src="${m.url}" class="max-w-full max-h-full">`:`<video src="${m.url}" controls class="max-w-full max-h-full"></video>`; lightbox.classList.remove('hidden'); lightbox.classList.add('flex'); };
 
   loginForm.addEventListener('submit', (e) => { e.preventDefault(); const u = USERS.find(x => x.name === userSelect.value); if(u && u.password === passwordInput.value) loginUser(u); else loginError.textContent = 'Senha incorreta.'; });
