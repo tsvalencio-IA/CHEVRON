@@ -398,7 +398,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="footer">
                 <div class="signature-line"></div>
                 <p>Assinatura do Responsável / Cliente</p>
-                <p style="font-size:10px;color:#888;margin-top:20px">Documento gerado em: ${new Date().toLocaleString("pt-BR")}</p>
+                <p style="font-size:10px;color:#888;margin-top:20px">Desenvolvido com 🤖 - por thIAguinho Soluções - gerado em: ${new Date().toLocaleString("pt-BR")}</p>
             </div>
         </div>
         <script>window.onload=function(){window.print();setTimeout(function(){window.close()},500)}<\/script>
