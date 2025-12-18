@@ -291,7 +291,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const logs = Object.entries(os.logs || {}).sort(([,a], [,b]) => new Date(b.timestamp) - new Date(a.timestamp));
     timelineContainer.innerHTML = logs.length ? logs.map(([id, log]) => {
       const canDel = (currentUser.role === 'Gestor' || currentUser.role === 'Atendente') && !log.description?.startsWith('ATT EXCLUIDA');
-      return `<div class="timeline-item"><div class="bg-gray-50 p-3 rounded-lg relative">${canDel ? `<button class="delete-log-btn" data-os-id="${os.id}" data-log-id="${id}"><i class='bx bx-x text-lg'></i></button>` : ''}<div class="flex justify-between mb-1"><h4 class="font-semibold text-gray-800 text-sm">${log.user}</h4><span class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleDateString()}</span></div><p class="text-gray-700 text-sm">${log.description}</p>${log.parts ? `<p class="text-gray-600 text-xs mt-1"><strong>Peças:</strong> ${log.parts}</p>` : ''}${log.value ? `<p class="text-green-600 text-xs mt-1"><strong>Valor:</strong> R$ ${parseFloat(log.value).toFixed(2)}</p>` : ''}</div></div>`;
+      
+      // === CORREÇÃO: FORMATAÇÃO DE DATA E HORA ===
+      const dateObj = new Date(log.timestamp);
+      // Aqui usamos pt-BR completo para exibir data e hora
+      const dataHoraFormatada = dateObj.toLocaleString('pt-BR');
+
+      return `<div class="timeline-item"><div class="bg-gray-50 p-3 rounded-lg relative">${canDel ? `<button class="delete-log-btn" data-os-id="${os.id}" data-log-id="${id}"><i class='bx bx-x text-lg'></i></button>` : ''}<div class="flex justify-between mb-1"><h4 class="font-semibold text-gray-800 text-sm">${log.user}</h4><span class="text-xs text-gray-500">${dataHoraFormatada}</span></div><p class="text-gray-700 text-sm">${log.description}</p>${log.parts ? `<p class="text-gray-600 text-xs mt-1"><strong>Peças:</strong> ${log.parts}</p>` : ''}${log.value ? `<p class="text-green-600 text-xs mt-1"><strong>Valor:</strong> R$ ${parseFloat(log.value).toFixed(2)}</p>` : ''}</div></div>`;
     }).join('') : '<p class="text-gray-500 text-center py-4">Sem histórico.</p>';
   };
 
@@ -318,6 +324,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const os = allServiceOrders[osId];
     if (!os) { showNotification('Dados da O.S. não encontrados.', 'error'); return; }
     
+    // Formata Data E HORA
     const formatDate = (isoString) => {
         if (!isoString) return 'N/A';
         return new Date(isoString).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -337,7 +344,6 @@ document.addEventListener('DOMContentLoaded', () => {
         </tr>`;
     }).join('');
 
-    // Filtra apenas imagens para impressão
     const media = os.media ? Object.values(os.media) : [];
     const photos = media.filter(item => item && item.type && item.type.startsWith('image/'));
     const photosHtml = photos.length > 0 
@@ -389,7 +395,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="section">
                 <h2>Histórico de Serviços e Peças</h2>
                 <table>
-                    <thead><tr><th>Data</th><th>Técnico</th><th>Descrição</th><th>Peças</th><th style="text-align:right;">Valor</th></tr></thead>
+                    <thead><tr><th>Data/Hora</th><th>Técnico</th><th>Descrição</th><th>Peças</th><th style="text-align:right;">Valor</th></tr></thead>
                     <tbody>${timelineHtml||'<tr><td colspan="5" style="text-align:center;">Sem registros.</td></tr>'}</tbody>
                 </table>
                 <div class="total">Total Estimado: R$ ${totalValue.toFixed(2)}</div>
@@ -419,12 +425,25 @@ document.addEventListener('DOMContentLoaded', () => {
   kanbanBoard.addEventListener('input', (e) => { if(e.target.matches('.search-input-entregue')) renderDeliveredColumn(); });
   globalSearchInput.addEventListener('input', (e) => { const t = e.target.value.toUpperCase().trim(); if(!t) { globalSearchResults.classList.add('hidden'); return; } const res = Object.values(allServiceOrders).filter(o => o.placa?.toUpperCase().includes(t)).sort((a,b)=>new Date(b.createdAt)-new Date(a.createdAt)); globalSearchResults.innerHTML = res.map(o => `<div class="search-result-item p-2 hover:bg-gray-100 cursor-pointer" data-os-id="${o.id}"><p class="font-bold">${o.placa}</p><p class="text-sm">${formatStatus(o.status)}</p></div>`).join(''); globalSearchResults.classList.remove('hidden'); });
   globalSearchResults.addEventListener('click', (e) => { const el = e.target.closest('.search-result-item'); if(el) { openDetailsModal(el.dataset.osId); globalSearchResults.classList.add('hidden'); } });
-  document.addEventListener('click', (e) => { if(e.target.closest('.btn-close-modal') || ['detailsModal','osModal','adminModal','reportsModal'].includes(e.target.id)) document.getElementById(e.target.id||e.target.closest('.modal').id).classList.add('hidden'); if(!document.querySelector('.search-container').contains(e.target)) globalSearchResults.classList.add('hidden'); });
+  
+  // === CORREÇÃO CRÍTICA DO TRAVAMENTO ===
+  document.addEventListener('click', (e) => { 
+      if(e.target.closest('.btn-close-modal') || ['detailsModal','osModal','adminModal','reportsModal'].includes(e.target.id)) {
+          document.getElementById(e.target.id||e.target.closest('.modal').id).classList.add('hidden'); 
+      }
+      
+      // Correção: Verifica se search-container existe antes de checar click
+      const sc = document.querySelector('.search-container');
+      if(sc && !sc.contains(e.target)) {
+          globalSearchResults.classList.add('hidden'); 
+      }
+  });
+
   thumbnailGrid.addEventListener('click', (e) => { const d = e.target.closest('.delete-media-btn'); if(d) { e.stopPropagation(); confirmDeleteMediaBtn.dataset.osId = d.dataset.osId; confirmDeleteMediaBtn.dataset.mediaKey = d.dataset.mediaKey; confirmDeleteMediaModal.classList.remove('hidden'); confirmDeleteMediaModal.classList.add('flex'); } else if(e.target.closest('.thumbnail-item')) openLightbox(parseInt(e.target.closest('.thumbnail-item').dataset.index)); });
   addOSBtn.addEventListener('click', () => { document.getElementById('osModalTitle').textContent = 'Nova O.S.'; document.getElementById('osId').value = ''; osForm.reset(); document.getElementById('osResponsavel').innerHTML = USERS.map(u => `<option>${u.name}</option>`).join(''); osModal.classList.remove('hidden'); osModal.classList.add('flex'); });
   osForm.addEventListener('submit', (e) => { e.preventDefault(); const d = { placa: document.getElementById('osPlaca').value.toUpperCase(), modelo: document.getElementById('osModelo').value, cliente: document.getElementById('osCliente').value, telefone: document.getElementById('osTelefone').value, km: parseInt(document.getElementById('osKm').value), responsible: document.getElementById('osResponsavel').value, observacoes: document.getElementById('osObservacoes').value, priority: document.querySelector('input[name="osPrioridade"]:checked').value, status: 'Aguardando-Mecanico', createdAt: new Date().toISOString(), lastUpdate: new Date().toISOString() }; db.ref('serviceOrders').push(d); osModal.classList.add('hidden'); });
   
-  // CORREÇÃO: MÚLTIPLAS FOTOS (.push)
+  // CORREÇÃO: MÚLTIPLAS FOTOS (.push) - LÓGICA ORIGINAL DO SEU ARQUIVO
   logForm.addEventListener('submit', async (e) => { 
       e.preventDefault(); 
       const id = document.getElementById('logOsId').value; 
