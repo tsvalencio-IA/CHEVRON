@@ -314,10 +314,22 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             const searchTerm = text.toUpperCase();
             
             // Busca o carro no array workshopData populado pelo Firebase
-            const foundVehicle = workshopData.find(car => 
+            // 1. Encontra TODOS os veículos que batem com a pesquisa
+            const possibleMatches = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa)) || 
                 (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
             );
+
+            // 2. Ordena do mais RECENTE para o mais ANTIGO
+            // Assim, se tiver um carro "Em Atendimento" (mais novo) e um "Entregue" (velho), ele pega o novo.
+            possibleMatches.sort((a, b) => {
+                const dateA = new Date(a.lastUpdate || a.createdAt || 0);
+                const dateB = new Date(b.lastUpdate || b.createdAt || 0);
+                return dateB - dateA; // Ordem decrescente
+            });
+
+            // 3. Pega o primeiro da lista (o mais atual)
+            const foundVehicle = possibleMatches[0];
 
             if (foundVehicle) {
                 const logsResumo = foundVehicle.logs ? Object.values(foundVehicle.logs).slice(-3).map(l => `${l.user}: ${l.description}`).join(' | ') : "Sem histórico recente";
