@@ -156,6 +156,8 @@ document.addEventListener('DOMContentLoaded', () => {
     scheduleDailyLogout();
 
     if(arBtn) arBtn.classList.remove('hidden'); 
+    
+    // RESTAURADO: Permissões do Thiago (Botão Relatórios e Admin)
     if (user.name === 'Thiago Ventura Valencio') {
       adminBtn.classList.remove('hidden');
       reportsBtn.classList.remove('hidden');
@@ -293,14 +295,13 @@ document.addEventListener('DOMContentLoaded', () => {
     }).join('') : '<p class="text-gray-500 text-center py-4">Sem histórico.</p>';
   };
 
-  // OTIMIZAÇÃO CLOUDINARY: Mantida w_200 (miniaturas leves)
+  // RESTAURADO: TRUQUE w_200 (Miniaturas Rápidas)
   const renderMediaGallery = (os) => {
     const media = Object.entries(os.media || {});
     lightboxMedia = media.map(e => ({...e[1], key: e[0]}));
     thumbnailGrid.innerHTML = media.length ? media.map(([key, item], idx) => {
         const canDel = USERS_CAN_DELETE_MEDIA.includes(currentUser.name);
         
-        // TRUQUE PARA CARREGAR RÁPIDO: Se for Cloudinary, pede miniatura!
         let thumbUrl = item.url;
         if(item.url.includes('cloudinary.com') && item.type.startsWith('image')) {
             thumbUrl = item.url.replace('/upload/', '/upload/w_200,h_200,c_fill,q_auto,f_auto/');
@@ -329,12 +330,11 @@ document.addEventListener('DOMContentLoaded', () => {
   addOSBtn.addEventListener('click', () => { document.getElementById('osModalTitle').textContent = 'Nova O.S.'; document.getElementById('osId').value = ''; osForm.reset(); document.getElementById('osResponsavel').innerHTML = USERS.map(u => `<option>${u.name}</option>`).join(''); osModal.classList.remove('hidden'); osModal.classList.add('flex'); });
   osForm.addEventListener('submit', (e) => { e.preventDefault(); const d = { placa: document.getElementById('osPlaca').value.toUpperCase(), modelo: document.getElementById('osModelo').value, cliente: document.getElementById('osCliente').value, telefone: document.getElementById('osTelefone').value, km: parseInt(document.getElementById('osKm').value), responsible: document.getElementById('osResponsavel').value, observacoes: document.getElementById('osObservacoes').value, priority: document.querySelector('input[name="osPrioridade"]:checked').value, status: 'Aguardando-Mecanico', createdAt: new Date().toISOString(), lastUpdate: new Date().toISOString() }; db.ref('serviceOrders').push(d); osModal.classList.add('hidden'); });
   
-  // LÓGICA DE UPLOAD E ATUALIZAÇÃO
+  // CORREÇÃO: MÚLTIPLAS FOTOS (.push)
   logForm.addEventListener('submit', async (e) => { 
       e.preventDefault(); 
       const id = document.getElementById('logOsId').value; 
       
-      // Upload de Múltiplas Fotos
       if(filesToUpload.length) {
           for(let f of filesToUpload) { 
               const r = await uploadFileToCloudinary(f); 
@@ -358,7 +358,6 @@ document.addEventListener('DOMContentLoaded', () => {
   openCameraBtn.addEventListener('click', ()=>{mediaInput.accept='image/*'; mediaInput.capture='camera'; mediaInput.click();}); 
   openGalleryBtn.addEventListener('click', ()=>{mediaInput.accept='image/*,video/*,application/pdf'; mediaInput.removeAttribute('capture'); mediaInput.click();}); 
   
-  // CORREÇÃO MÚLTIPLAS FOTOS: USA .push() E EXIBE CONTAGEM
   mediaInput.addEventListener('change', (e)=>{
       if(e.target.files.length > 0) {
           filesToUpload.push(...e.target.files);
@@ -369,6 +368,11 @@ document.addEventListener('DOMContentLoaded', () => {
   ['lightbox-prev','lightbox-next','lightbox-close','lightbox-close-bg'].forEach(id=>document.getElementById(id).addEventListener('click', ()=>{ if(id.includes('prev')&&currentLightboxIndex>0) openLightbox(currentLightboxIndex-1); else if(id.includes('next')&&currentLightboxIndex<lightboxMedia.length-1) openLightbox(currentLightboxIndex+1); else lightbox.classList.add('hidden'); }));
   adminBtn.addEventListener('click', ()=>{adminModal.classList.remove('hidden'); adminModal.classList.add('flex');}); cloudinaryForm.addEventListener('submit', (e)=>{e.preventDefault(); db.ref('cloudinaryConfigs').push({cloudName:document.getElementById('cloudNameInput').value, uploadPreset:document.getElementById('uploadPresetInput').value, timestamp:firebase.database.ServerValue.TIMESTAMP}); adminModal.classList.add('hidden');});
   
+  // RESTAURADO: Lógica do Relatório (Botão e PDF)
+  reportsBtn.addEventListener('click', () => { reportsForm.reset(); reportsResultContainer.innerHTML = ''; exportReportBtn.classList.add('hidden'); reportsModal.classList.remove('hidden'); reportsModal.classList.add('flex'); });
+  reportsForm.addEventListener('submit', (e) => { e.preventDefault(); const startDate = new Date(document.getElementById('startDate').value + 'T00:00:00'); const endDate = new Date(document.getElementById('endDate').value + 'T23:59:59'); const delivered = Object.values(allServiceOrders).filter(os => { if (os.status !== 'Entregue') return false; const d = new Date(os.lastUpdate); return d >= startDate && d <= endDate; }).sort((a,b) => new Date(b.lastUpdate) - new Date(a.lastUpdate)); if (delivered.length > 0) { reportsResultContainer.innerHTML = `<table id="reportTable" class="w-full text-sm"><thead><tr><th>Data</th><th>Placa</th><th>Modelo</th><th>Cliente</th></tr></thead><tbody>${delivered.map(os => `<tr><td>${new Date(os.lastUpdate).toLocaleDateString()}</td><td>${os.placa}</td><td>${os.modelo}</td><td>${os.cliente}</td></tr>`).join('')}</tbody></table>`; exportReportBtn.classList.remove('hidden'); } else { reportsResultContainer.innerHTML = '<p class="text-center p-4">Nenhum veículo.</p>'; exportReportBtn.classList.add('hidden'); } });
+  exportReportBtn.addEventListener('click', () => { const { jsPDF } = window.jspdf; const doc = new jsPDF(); doc.text("Veículos Entregues", 14, 16); doc.autoTable({ html: '#reportTable' }); doc.save(`Relatorio_${new Date().toISOString().slice(0,10)}.pdf`); });
+
   if(arBtn) arBtn.addEventListener('click', () => window.location.href = 'consultor.html');
   
   detailsModal.addEventListener('click', (e) => {
