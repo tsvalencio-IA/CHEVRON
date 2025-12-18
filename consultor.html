@@ -314,58 +314,61 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             const searchTerm = text.toUpperCase();
             
             // Busca o carro no array workshopData populado pelo Firebase
-            // 1. Busca TODOS os registros que batem com a Placa ou Modelo
+            // 1. Busca TODOS os registros (Histórico Completo)
             const allRecords = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa)) || 
                 (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
             );
 
             if (allRecords.length > 0) {
-                // 2. Ordena do MAIS ANTIGO para o MAIS NOVO (Linha do Tempo para ler a história)
+                // 2. Ordena do ANTIGO para o NOVO (Para contar a história na ordem certa)
                 allRecords.sort((a, b) => {
                     const dateA = new Date(a.createdAt || 0);
                     const dateB = new Date(b.createdAt || 0);
                     return dateA - dateB; 
                 });
 
-                // 3. O "Carro Atual" é o último da lista (o mais recente)
+                // 3. O registro mais recente (Status atual do pátio)
                 const currentVehicle = allRecords[allRecords.length - 1];
 
-                // 4. Constrói o Dossiê Completo (Varrendo todas as passagens antigas)
+                // 4. Monta o Dossiê Detalhado (Lendo Descrição + Peças + Técnico)
                 let dossieHistorico = "";
                 
                 allRecords.forEach((os, index) => {
-                    // Pega as peças citadas nos logs dessa OS específica
-                    const pecasDestaOS = os.logs ? Object.values(os.logs)
-                        .filter(l => l.parts) // Só logs que tiveram peças registradas
-                        .map(l => l.parts)
-                        .join(', ') : "Nenhuma peça registrada";
+                    // CORREÇÃO CRÍTICA: Agora lê a DESCRIÇÃO, não só as peças.
+                    const logsDetalhados = os.logs ? Object.values(os.logs)
+                        .map(l => {
+                            const dataLog = new Date(l.timestamp).toLocaleString('pt-BR');
+                            const pecasInfo = l.parts ? ` | Peças: ${l.parts}` : "";
+                            return `   - [${dataLog}] ${l.user}: ${l.description}${pecasInfo}`;
+                        })
+                        .join('\n') : "   - Sem detalhes registrados.";
 
-                    const dataOS = new Date(os.createdAt).toLocaleDateString('pt-BR');
+                    const dataAbertura = new Date(os.createdAt).toLocaleDateString('pt-BR');
                     
                     dossieHistorico += `
-                    --- PASSAGEM ${index + 1} (${dataOS}) ---
+                    === ATENDIMENTO ${index + 1} (Aberto em: ${dataAbertura}) ===
                     Status Final: ${os.status}
-                    KM na época: ${os.km || 'N/A'}
-                    Peças/Serviços: ${pecasDestaOS}
-                    --------------------------------`;
+                    KM: ${os.km || 'N/A'}
+                    Histórico de Execução:
+                    ${logsDetalhados}
+                    ========================================\n`;
                 });
 
-                // 5. Monta o Prompt para a IA agir como Auditora
+                // 5. Injeta no cérebro da IA
                 contextInjection = `
-                [DOSSIÊ TÉCNICO COMPLETO DO VEÍCULO - ORDEM CRONOLÓGICA]
+                [DOSSIÊ TÉCNICO COMPLETO DO VEÍCULO]
                 Veículo: ${currentVehicle.modelo} (Placa: ${currentVehicle.placa})
                 Cliente: ${currentVehicle.cliente}
+                Status Atual (Hoje): ${currentVehicle.status.replace(/-/g, ' ')}
                 
-                HISTÓRICO DE MANUTENÇÕES NA OFICINA:
+                >>> HISTÓRICO TOTAL DE PASSAGENS PELA OFICINA:
                 ${dossieHistorico}
                 
-                STATUS ATUAL (HOJE): ${currentVehicle.status.replace(/-/g, ' ')}
-                
-                MISSÃO CRÍTICA: Você é o Guardião da Qualidade e Auditor Técnico.
-                1. Se o usuário perguntar sobre um serviço, VERIFIQUE NO HISTÓRICO ACIMA se já foi feito recentemente.
-                2. Se sugerirem trocar uma peça que já foi trocada há pouco tempo (ex: "Bieleta"), ALERTE IMEDIATAMENTE sobre a garantia/duplicidade citando a data da troca anterior.
-                3. Use os dados acima para responder com precisão absoluta sobre o histórico do carro.
+                [SUA MISSÃO COMO AUDITOR TÉCNICO]
+                1. Você tem acesso total ao que foi feito acima.
+                2. Se perguntarem "O que foi feito?", cite os detalhes do histórico (ex: "O técnico João trocou tal peça dia tal").
+                3. Se pedirem para trocar algo que JÁ FOI TROCADO recentemente, alerte sobre a garantia.
                 `;
             }
 
