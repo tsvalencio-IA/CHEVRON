@@ -291,12 +291,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const logs = Object.entries(os.logs || {}).sort(([,a], [,b]) => new Date(b.timestamp) - new Date(a.timestamp));
     timelineContainer.innerHTML = logs.length ? logs.map(([id, log]) => {
       const canDel = (currentUser.role === 'Gestor' || currentUser.role === 'Atendente') && !log.description?.startsWith('ATT EXCLUIDA');
-      
-      // === CORREÇÃO: DATA E HORA ===
-      const dateObj = new Date(log.timestamp);
-      const dataHoraFormatada = dateObj.toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: '2-digit', hour: '2-digit', minute: '2-digit' });
-
-      return `<div class="timeline-item"><div class="bg-gray-50 p-3 rounded-lg relative">${canDel ? `<button class="delete-log-btn" data-os-id="${os.id}" data-log-id="${id}"><i class='bx bx-x text-lg'></i></button>` : ''}<div class="flex justify-between mb-1"><h4 class="font-semibold text-gray-800 text-sm">${log.user}</h4><span class="text-xs text-gray-500">${dataHoraFormatada}</span></div><p class="text-gray-700 text-sm">${log.description}</p>${log.parts ? `<p class="text-gray-600 text-xs mt-1"><strong>Peças:</strong> ${log.parts}</p>` : ''}${log.value ? `<p class="text-green-600 text-xs mt-1"><strong>Valor:</strong> R$ ${parseFloat(log.value).toFixed(2)}</p>` : ''}</div></div>`;
+      return `<div class="timeline-item"><div class="bg-gray-50 p-3 rounded-lg relative">${canDel ? `<button class="delete-log-btn" data-os-id="${os.id}" data-log-id="${id}"><i class='bx bx-x text-lg'></i></button>` : ''}<div class="flex justify-between mb-1"><h4 class="font-semibold text-gray-800 text-sm">${log.user}</h4><span class="text-xs text-gray-500">${new Date(log.timestamp).toLocaleDateString()}</span></div><p class="text-gray-700 text-sm">${log.description}</p>${log.parts ? `<p class="text-gray-600 text-xs mt-1"><strong>Peças:</strong> ${log.parts}</p>` : ''}${log.value ? `<p class="text-green-600 text-xs mt-1"><strong>Valor:</strong> R$ ${parseFloat(log.value).toFixed(2)}</p>` : ''}</div></div>`;
     }).join('') : '<p class="text-gray-500 text-center py-4">Sem histórico.</p>';
   };
 
@@ -323,7 +318,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const os = allServiceOrders[osId];
     if (!os) { showNotification('Dados da O.S. não encontrados.', 'error'); return; }
     
-    // CORREÇÃO: Função para exibir Data E Hora na Impressão também
     const formatDate = (isoString) => {
         if (!isoString) return 'N/A';
         return new Date(isoString).toLocaleString('pt-BR', { dateStyle: 'short', timeStyle: 'short' });
@@ -343,6 +337,7 @@ document.addEventListener('DOMContentLoaded', () => {
         </tr>`;
     }).join('');
 
+    // Filtra apenas imagens para impressão
     const media = os.media ? Object.values(os.media) : [];
     const photos = media.filter(item => item && item.type && item.type.startsWith('image/'));
     const photosHtml = photos.length > 0 
@@ -394,7 +389,7 @@ document.addEventListener('DOMContentLoaded', () => {
             <div class="section">
                 <h2>Histórico de Serviços e Peças</h2>
                 <table>
-                    <thead><tr><th>Data/Hora</th><th>Técnico</th><th>Descrição</th><th>Peças</th><th style="text-align:right;">Valor</th></tr></thead>
+                    <thead><tr><th>Data</th><th>Técnico</th><th>Descrição</th><th>Peças</th><th style="text-align:right;">Valor</th></tr></thead>
                     <tbody>${timelineHtml||'<tr><td colspan="5" style="text-align:center;">Sem registros.</td></tr>'}</tbody>
                 </table>
                 <div class="total">Total Estimado: R$ ${totalValue.toFixed(2)}</div>
