@@ -381,21 +381,32 @@ Siga esta hierarquia rigorosa ao recomendar peças:
                 `;
             }
 
-            // --- NOVO: BUSCA NO CÉREBRO DE PEÇAS (CATÁLOGO) ---
-            const pecasEncontradas = partsCatalog.filter(p => 
-                searchTerm.includes(p.aplicacao.toUpperCase()) || // Se falou o carro (ex: "Onix")
-                searchTerm.includes(p.descricao.toUpperCase()) || // Se falou a peça (ex: "Pastilha")
-                searchTerm.includes(p.codigo.toUpperCase())       // Se falou o código
-            ).slice(0, 5); // Pega só as top 5 para não lotar a memória
+            // --- NOVO: BUSCA INTELIGENTE NO CÉREBRO DE PEÇAS (CATÁLOGO) ---
+            // CORREÇÃO CRÍTICA: Busca flexível (ignora espaços e "DS")
+            const pecasEncontradas = partsCatalog.filter(p => {
+                const perguntaLimpa = searchTerm.replace(/[^A-Z0-9]/g, ''); // Remove espaços da pergunta
+                const codigoLimpo = p.codigo.replace(/[^A-Z0-9]/g, '');     // Remove espaços do código (Ex: "DS1161")
+                const apenasNumero = codigoLimpo.replace(/[A-Z]/g, '');     // Pega só o número (Ex: "1161")
+
+                // Lógica de Match:
+                // 1. Se a pergunta contém o código exato (Ex: "DS1161")
+                // 2. Se a pergunta contém apenas o número (Ex: "1161") e o número tem mais de 3 dígitos (pra não pegar "DS 10")
+                // 3. Se a pergunta contém a descrição (Ex: "Regulador")
+                
+                return perguntaLimpa.includes(codigoLimpo) || 
+                       (apenasNumero.length > 2 && perguntaLimpa.includes(apenasNumero)) ||
+                       searchTerm.includes(p.descricao.toUpperCase()) ||
+                       searchTerm.includes(p.aplicacao.toUpperCase());
+            }).slice(0, 5); // Top 5 resultados
 
             let infoCatalogo = "";
             if (pecasEncontradas.length > 0) {
                 infoCatalogo = `
-                [CONSULTA AO CATÁLOGO DE PEÇAS]
-                Encontrei estas opções no banco de dados da oficina:
-                ${pecasEncontradas.map(p => `- ${p.marca} (Cód: ${p.codigo}): ${p.descricao} [Aplicação: ${p.aplicacao}]`).join('\n')}
+                [CONSULTA AO CATÁLOGO DE PEÇAS - BASE DE DADOS OFICINA]
+                Encontrei estas opções exatas no nosso sistema:
+                ${pecasEncontradas.map(p => `- CÓDIGO: ${p.codigo} (${p.marca}) | PEÇA: ${p.descricao} | APLICAÇÃO: ${p.aplicacao}`).join('\n')}
                 
-                INSTRUÇÃO: Se a pergunta for sobre aplicação de peças, use os códigos acima.
+                INSTRUÇÃO OBRIGATÓRIA: Se o usuário perguntou sobre aplicação ou detalhes de uma peça, use EXATAMENTE os dados acima. Não invente.
                 `;
             }
             
