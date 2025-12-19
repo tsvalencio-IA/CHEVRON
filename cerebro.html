@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CÉREBRO DO THIAGUINHO - Injeção de Conhecimento</title>
+    
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@400;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
+    
+    <style>
+        body {
+            background-color: #1e1e1e;
+            color: #d4d4d4;
+            font-family: 'Roboto Mono', monospace;
+            padding: 20px;
+            margin: 0;
+        }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #60a5fa; text-align: center; border-bottom: 2px solid #60a5fa; padding-bottom: 10px; }
+        
+        .panel {
+            background: #2d2d2d;
+            border: 1px solid #444;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 20px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.5);
+        }
+
+        label { display: block; margin-bottom: 10px; font-weight: bold; color: #fff; }
+        
+        textarea {
+            width: 100%;
+            height: 300px;
+            background: #1e1e1e;
+            color: #a3e635; /* Verde terminal */
+            border: 1px solid #555;
+            padding: 10px;
+            font-family: 'Roboto Mono', monospace;
+            font-size: 14px;
+            border-radius: 4px;
+            resize: vertical;
+        }
+
+        .actions { margin-top: 20px; display: flex; gap: 10px; justify-content: flex-end; }
+
+        button {
+            padding: 12px 24px;
+            font-size: 16px;
+            font-weight: bold;
+            cursor: pointer;
+            border: none;
+            border-radius: 4px;
+            transition: all 0.3s;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        #btnInject {
+            background-color: #2563eb;
+            color: white;
+        }
+        #btnInject:hover { background-color: #1d4ed8; transform: translateY(-2px); }
+        
+        #btnClear { background-color: #4b5563; color: white; }
+        #btnClear:hover { background-color: #374151; }
+
+        #status-log {
+            margin-top: 20px;
+            background: #000;
+            padding: 15px;
+            border-radius: 4px;
+            height: 150px;
+            overflow-y: auto;
+            border: 1px solid #333;
+            font-size: 12px;
+        }
+        .log-success { color: #4ade80; }
+        .log-error { color: #f87171; }
+        .log-info { color: #60a5fa; }
+
+        .warning {
+            background: #451a03;
+            border-left: 4px solid #f59e0b;
+            padding: 10px;
+            margin-bottom: 20px;
+            font-size: 13px;
+            color: #fcd34d;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h1><i class='bx bx-brain'></i> INJETOR DE CONHECIMENTO</h1>
+        
+        <div class="warning">
+            <i class='bx bx-error'></i> <strong>ÁREA RESTRITA:</strong> Esta ferramenta altera diretamente o banco de dados de conhecimento da IA. Certifique-se de que o arquivo JSON está formatado corretamente.
+        </div>
+
+        <div class="panel">
+            <label>Cole o JSON do Catálogo aqui:</label>
+            <textarea id="jsonInput" placeholder='Exemplo:
+{
+  "pecas": [
+    {
+      "codigo": "DS 1161",
+      "marca": "DS",
+      "descricao": "Regulador de Pressão",
+      "aplicacao": "Golf, Passat..."
+    }
+  ]
+}'></textarea>
+
+            <div class="actions">
+                <button id="btnClear" onclick="document.getElementById('jsonInput').value = ''">
+                    <i class='bx bx-eraser'></i> Limpar
+                </button>
+                <button id="btnInject" onclick="injetarConhecimento()">
+                    <i class='bx bx-microchip'></i> INJETAR NO CÉREBRO
+                </button>
+            </div>
+        </div>
+
+        <div id="status-log">
+            <div class="log-info">> Sistema pronto. Aguardando dados...</div>
+        </div>
+    </div>
+
+    <script>
+        // --- CONEXÃO COM O MESMO BANCO DO SISTEMA PRINCIPAL ---
+        const firebaseConfig = {
+            apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
+            authDomain: "dashboard-oficina-pro.firebaseapp.com",
+            databaseURL: "https://dashboard-oficina-pro-default-rtdb.firebaseio.com",
+            projectId: "dashboard-oficina-pro",
+            storageBucket: "dashboard-oficina-pro.appspot.com",
+            messagingSenderId: "736157192887",
+            appId: "1:736157192887:web:c23d3daade848a33d67332"
+        };
+        
+        firebase.initializeApp(firebaseConfig);
+        const db = firebase.database();
+
+        function log(msg, type = 'info') {
+            const logDiv = document.getElementById('status-log');
+            const entry = document.createElement('div');
+            entry.className = `log-${type}`;
+            entry.innerHTML = `> [${new Date().toLocaleTimeString()}] ${msg}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        async function injetarConhecimento() {
+            const btn = document.getElementById('btnInject');
+            const input = document.getElementById('jsonInput');
+            const rawData = input.value.trim();
+
+            if (!rawData) {
+                log("Erro: O campo de texto está vazio.", "error");
+                return;
+            }
+
+            try {
+                btn.disabled = true;
+                btn.innerHTML = "<i class='bx bx-loader-alt bx-spin'></i> Processando...";
+                
+                log("Validando estrutura JSON...", "info");
+                const jsonData = JSON.parse(rawData);
+
+                if (!jsonData.pecas || !Array.isArray(jsonData.pecas)) {
+                    throw new Error("Formato inválido! O JSON precisa começar com { \"pecas\": [ ... ] }");
+                }
+
+                log(`Estrutura válida. Preparando ${jsonData.pecas.length} itens para envio...`, "info");
+
+                let sucessos = 0;
+                let erros = 0;
+
+                // Processamento em Lote
+                for (const peca of jsonData.pecas) {
+                    if (!peca.codigo) {
+                        log(`Item ignorado: Sem código identificador.`, "error");
+                        erros++;
+                        continue;
+                    }
+
+                    // Cria uma chave segura para o banco (remove caracteres proibidos como ., #, $, /, [ ou ])
+                    // Ex: "DS 1161" vira "DS_1161"
+                    const safeKey = peca.codigo.replace(/[.#$/\[\]]/g, "_").replace(/\s+/g, "_").toUpperCase();
+
+                    // Envia para o nó 'catalogs'
+                    await db.ref('catalogs/' + safeKey).update(peca);
+                    sucessos++;
+                }
+
+                log(`OPERAÇÃO CONCLUÍDA!`, "success");
+                log(`Sucessos: ${sucessos} | Ignorados: ${erros}`, "success");
+                log(`O thIAguinho já está ciente dessas novas peças.`, "info");
+                
+                input.value = ""; // Limpa a área após sucesso
+                alert(`Sucesso! ${sucessos} peças foram adicionadas ao cérebro do thIAguinho.`);
+
+            } catch (error) {
+                log("ERRO CRÍTICO: " + error.message, "error");
+                console.error(error);
+                alert("Erro ao injetar: " + error.message);
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = "<i class='bx bx-microchip'></i> INJETAR NO CÉREBRO";
+            }
+        }
+    </script>
+</body>
+</html>
