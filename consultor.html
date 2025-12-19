@@ -15,97 +15,27 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
-        /* CORREÇÃO DA CÂMERA: FUNDO TRANSPARENTE (MANTIDO INTACTO) */
-        html, body {
-            margin: 0; padding: 0; width: 100%; height: 100%;
-            overflow: hidden; background-color: transparent !important;
-        }
-        
-        /* VÍDEO DA CÂMERA NO FUNDO */
-        video {
-            position: absolute; top: 0; left: 0; z-index: -1 !important;
-            width: 100% !important; height: 100% !important; object-fit: cover !important;
-        }
-
-        /* TELA DE START */
-        #start-screen {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #000; /* Preto só aqui no início */
-            z-index: 99999; display: flex; flex-direction: column;
-            align-items: center; justify-content: center; text-align: center; color: white;
-        }
-        
-        #start-btn {
-            background: #2563eb; color: white; padding: 20px 40px;
-            font-size: 20px; font-weight: bold; border: none; border-radius: 50px;
-            margin-top: 30px; cursor: pointer; box-shadow: 0 0 25px rgba(37, 99, 235, 0.8);
-            text-transform: uppercase; animation: pulse 2s infinite;
-        }
-
-        /* UI FLUTUANTE */
-        #ui-layer {
-            position: fixed; bottom: 0; left: 0; width: 100%; height: 100%;
-            pointer-events: none; display: flex; flex-direction: column;
-            justify-content: flex-end; z-index: 10000;
-        }
-
-        .chat-container {
-            pointer-events: auto;
-            background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%);
-            padding: 15px; display: flex; flex-direction: column; gap: 10px;
-            padding-bottom: 30px;
-        }
-
-        #chat-display {
-            max-height: 35vh; overflow-y: auto; color: white;
-            text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px;
-        }
-
-        .msg {
-            margin-bottom: 8px; padding: 10px 14px; border-radius: 12px;
-            line-height: 1.4; max-width: 90%; word-wrap: break-word;
-        }
+        /* ESTILOS ORIGINAIS MANTIDOS INTACTOS */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent !important; }
+        video { position: absolute; top: 0; left: 0; z-index: -1 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; }
+        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: white; }
+        #start-btn { background: #2563eb; color: white; padding: 20px 40px; font-size: 20px; font-weight: bold; border: none; border-radius: 50px; margin-top: 30px; cursor: pointer; box-shadow: 0 0 25px rgba(37, 99, 235, 0.8); text-transform: uppercase; animation: pulse 2s infinite; }
+        #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
+        .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
+        #chat-display { max-height: 35vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; }
+        .msg { margin-bottom: 8px; padding: 10px 14px; border-radius: 12px; line-height: 1.4; max-width: 90%; word-wrap: break-word; }
         .msg-user { background-color: rgba(37, 99, 235, 0.9); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
         .msg-ai { background-color: rgba(22, 163, 74, 0.9); align-self: flex-start; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #4ade80; }
-
         .controls { display: flex; gap: 8px; align-items: center; }
-
-        input {
-            flex-grow: 1; padding: 14px; border-radius: 30px; border: none; outline: none;
-            background: rgba(255, 255, 255, 0.95); font-size: 16px; color: #000;
-        }
-
-        .icon-btn {
-            width: 50px; height: 50px; border-radius: 50%; border: none;
-            display: flex; align-items: center; justify-content: center;
-            cursor: pointer; font-size: 24px; color: white; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3);
-        }
-        #micBtn { background-color: #4b5563; }
-        #micBtn.listening { background-color: #ef4444; animation: pulse 1s infinite; }
+        input { flex-grow: 1; padding: 14px; border-radius: 30px; border: none; outline: none; background: rgba(255, 255, 255, 0.95); font-size: 16px; color: #000; }
+        .icon-btn { width: 50px; height: 50px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: white; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
+        #micBtn { background-color: #4b5563; } #micBtn.listening { background-color: #ef4444; animation: pulse 1s infinite; }
         #sendBtn { background-color: #2563eb; }
-
-        #backBtn {
-            position: fixed; top: 20px; left: 20px; background-color: rgba(0,0,0,0.6);
-            width: 45px; height: 45px; pointer-events: auto; z-index: 10001;
-            border-radius: 50%; color: white; border: none; font-size: 26px;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-        }
-
-        #scan-overlay {
-            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
-            text-align: center; z-index: 5000; pointer-events: none; display: none;
-        }
-        .scan-box {
-            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
-            border: 4px solid rgba(255, 255, 255, 0.8); border-radius: 24px;
-            box-shadow: 0 0 30px rgba(37, 99, 235, 0.5);
-        }
-        .scan-text {
-            color: white; margin-top: 20px; font-weight: bold; font-size: 18px;
-            background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 8px; display: inline-block;
-        }
+        #backBtn { position: fixed; top: 20px; left: 20px; background-color: rgba(0,0,0,0.6); width: 45px; height: 45px; pointer-events: auto; z-index: 10001; border-radius: 50%; color: white; border: none; font-size: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+        #scan-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 5000; pointer-events: none; display: none; }
+        .scan-box { width: 70vw; height: 70vw; max-width: 300px; max-height: 300px; border: 4px solid rgba(255, 255, 255, 0.8); border-radius: 24px; box-shadow: 0 0 30px rgba(37, 99, 235, 0.5); }
+        .scan-text { color: white; margin-top: 20px; font-weight: bold; font-size: 18px; background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 8px; display: inline-block; }
         .hidden { display: none !important; }
-        
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
     </style>
 </head>
@@ -136,25 +66,16 @@
         </div>
     </div>
 
-    <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001" 
-             color-space="sRGB" 
-             renderer="colorManagement: true, physicallyCorrectLights" 
-             vr-mode-ui="enabled: false" 
-             device-orientation-permission-ui="enabled: false">
-        
-        <a-assets>
-            <video id="mascoteVideo" src="./assets/mascote.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline muted></video>
-        </a-assets>
-
+    <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
+        <a-assets><video id="mascoteVideo" src="./assets/mascote.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline muted></video></a-assets>
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
-
         <a-entity mindar-image-target="targetIndex: 0" id="target-entity">
             <a-plane src="#mascoteVideo" position="0 0 0" height="1.3" width="0.8" rotation="0 0 0" material="shader: flat; alphaTest: 0.5; transparent: true"></a-plane>
         </a-entity>
     </a-scene>
 
     <script>
-        // --- INTEGRAÇÃO COM FIREBASE (NOVA) ---
+        // CONFIGURAÇÃO DO FIREBASE (ORIGINAL + CÉREBRO)
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -169,24 +90,25 @@
             firebase.initializeApp(firebaseConfig);
         }
         const db = firebase.database();
-        let workshopData = []; // Aqui ficam os carros do pátio
-        let partsCatalog = []; // NOVO: Catálogo de peças
+        
+        // VARIÁVEIS GLOBAIS DE DADOS
+        let workshopData = []; // Histórico da Oficina
+        let partsCatalog = []; // Cérebro de Peças (Catálogos)
 
-        // LÊ OS DADOS DO PÁTIO EM TEMPO REAL PARA A IA USAR
+        // LÊ OS DADOS DO PÁTIO (HISTÓRICO)
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 workshopData = Object.values(data);
-                console.log("thIAguinho conectou ao pátio: " + workshopData.length + " veículos.");
             }
         });
 
-        // --- NOVO: LÊ O CÉREBRO DE PEÇAS ---
+        // LÊ O CÉREBRO DE PEÇAS (CATÁLOGOS)
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
                 partsCatalog = Object.values(data);
-                console.log("Cérebro de Peças carregado: " + partsCatalog.length + " itens.");
+                console.log("Módulo de Conhecimento Carregado: " + partsCatalog.length + " itens.");
             }
         });
 
@@ -210,7 +132,7 @@
         let voices = [];
         let chatHistory = [];
 
-        // --- PROMPT INTACTO DO SR AUTOMÓVEL ---
+        // --- PROMPT DO "SR AUTOMÓVEL" (INTACTO E PRESERVADO) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -288,12 +210,8 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             loadVoices();
             startScreen.style.display = 'none';
             scanOverlay.style.display = 'block';
-            
-            // Hack de Áudio
             const u = new SpeechSynthesisUtterance('');
             synthesis.speak(u);
-
-            // Carrega Vídeo
             videoEl.play().then(() => videoEl.pause()).catch(e => console.log(e));
         });
 
@@ -301,8 +219,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
         targetEntity.addEventListener("targetFound", () => {
             isTargetVisible = true;
             scanOverlay.classList.add('hidden');
-            if(isSpeaking) videoEl.play();
-            else { videoEl.pause(); videoEl.currentTime = 0; }
+            if(isSpeaking) videoEl.play(); else { videoEl.pause(); videoEl.currentTime = 0; }
         });
 
         targetEntity.addEventListener("targetLost", () => {
@@ -311,7 +228,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             videoEl.pause();
         });
 
-        // --- CÉREBRO: GEMINI 2.0 (MODIFICADO PARA LER workshopData e Cátalogo) ---
+        // --- CÉREBRO: GEMINI 2.0 (INTEGRADO COM AUDITORIA E CATÁLOGOS) ---
         async function askGemini(text) {
             if(!text.trim()) return;
             
@@ -319,105 +236,78 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             userInput.value = "";
             const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            // --- INJEÇÃO DE CONTEXTO DO PÁTIO ---
+            // Preparação dos dados para o Prompt
             let contextInjection = "";
-            const searchTerm = text.toUpperCase();
-            
-            // Busca o carro no array workshopData populado pelo Firebase
-            // 1. Busca TODOS os registros (Histórico Completo)
+            const searchTerm = text.toUpperCase().replace(/[^A-Z0-9 ]/g, ''); // Limpa caracteres especiais
+            const palavrasChave = searchTerm.split(' ').filter(p => p.length > 2); // Ex: ['SENSOR', 'ROTACAO', 'CORSA']
+
+            // --- 1. MÓDULO AUDITOR (HISTÓRICO COMPLETO) ---
+            // Procura o carro em TODOS os registros para montar o dossiê
             const allRecords = workshopData.filter(car => 
-                (car.placa && searchTerm.includes(car.placa)) || 
+                (car.placa && searchTerm.includes(car.placa.replace('-',''))) || 
                 (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
-            );
+            ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Ordena do Antigo -> Novo
 
             if (allRecords.length > 0) {
-                // 2. Ordena do ANTIGO para o NOVO (Para contar a história na ordem certa)
-                allRecords.sort((a, b) => {
-                    const dateA = new Date(a.createdAt || 0);
-                    const dateB = new Date(b.createdAt || 0);
-                    return dateA - dateB; 
-                });
-
-                // 3. O registro mais recente (Status atual do pátio)
-                const currentVehicle = allRecords[allRecords.length - 1];
-
-                // 4. Monta o Dossiê Detalhado (Lendo Descrição + Peças + Técnico)
-                let dossieHistorico = "";
+                const currentVehicle = allRecords[allRecords.length - 1]; // O registro mais atual
                 
+                let dossieHistorico = "";
                 allRecords.forEach((os, index) => {
-                    const logsDetalhados = os.logs ? Object.values(os.logs)
-                        .map(l => {
-                            const dataLog = new Date(l.timestamp).toLocaleString('pt-BR');
-                            const pecasInfo = l.parts ? ` | Peças: ${l.parts}` : "";
-                            return `   - [${dataLog}] ${l.user}: ${l.description}${pecasInfo}`;
-                        })
-                        .join('\n') : "   - Sem detalhes registrados.";
+                    // Lê descrição, peças e serviços de cada passagem
+                    const logsDetalhados = os.logs ? Object.values(os.logs).map(l => {
+                        const dataLog = new Date(l.timestamp).toLocaleDateString('pt-BR');
+                        return `   [${dataLog}] ${l.user}: ${l.description} (Peças: ${l.parts || 'Nenhuma'})`;
+                    }).join('\n') : "   Sem logs técnicos.";
 
                     const dataAbertura = new Date(os.createdAt).toLocaleDateString('pt-BR');
-                    
-                    dossieHistorico += `
-                    === ATENDIMENTO ${index + 1} (Aberto em: ${dataAbertura}) ===
-                    Status Final: ${os.status}
-                    KM: ${os.km || 'N/A'}
-                    Histórico de Execução:
-                    ${logsDetalhados}
-                    ========================================\n`;
+                    dossieHistorico += `   --- PASSAGEM ${index + 1} (${dataAbertura} - Status: ${os.status}) ---\n${logsDetalhados}\n`;
                 });
 
-                // 5. Injeta no cérebro da IA (Dados do Veículo)
-                contextInjection = `
-                [DOSSIÊ TÉCNICO COMPLETO DO VEÍCULO]
-                Veículo: ${currentVehicle.modelo} (Placa: ${currentVehicle.placa})
-                Cliente: ${currentVehicle.cliente}
-                Status Atual (Hoje): ${currentVehicle.status.replace(/-/g, ' ')}
+                contextInjection += `
+                [AUDITORIA DE HISTÓRICO DO VEÍCULO]
+                Veículo: ${currentVehicle.modelo} | Placa: ${currentVehicle.placa} | Cliente: ${currentVehicle.cliente}
                 
-                >>> HISTÓRICO TOTAL DE PASSAGENS PELA OFICINA:
+                >>> HISTÓRICO COMPLETO (Use isso para verificar GARANTIA e SERVIÇOS REPETIDOS):
                 ${dossieHistorico}
-                
-                [SUA MISSÃO COMO AUDITOR TÉCNICO]
-                1. Você tem acesso total ao que foi feito acima.
-                2. Se perguntarem "O que foi feito?", cite os detalhes do histórico (ex: "O técnico João trocou tal peça dia tal").
-                3. Se pedirem para trocar algo que JÁ FOI TROCADO recentemente, alerte sobre a garantia.
                 `;
             }
 
-            // --- NOVO: BUSCA INTELIGENTE NO CÉREBRO DE PEÇAS (CATÁLOGO) ---
-            // CORREÇÃO CRÍTICA: Busca flexível (ignora espaços e "DS")
-            const pecasEncontradas = partsCatalog.filter(p => {
-                const perguntaLimpa = searchTerm.replace(/[^A-Z0-9]/g, ''); // Remove espaços da pergunta
-                const codigoLimpo = p.codigo.replace(/[^A-Z0-9]/g, '');     // Remove espaços do código (Ex: "DS1161")
-                const apenasNumero = codigoLimpo.replace(/[A-Z]/g, '');     // Pega só o número (Ex: "1161")
-
-                // Lógica de Match:
-                // 1. Se a pergunta contém o código exato (Ex: "DS1161")
-                // 2. Se a pergunta contém apenas o número (Ex: "1161") e o número tem mais de 3 dígitos (pra não pegar "DS 10")
-                // 3. Se a pergunta contém a descrição (Ex: "Regulador")
+            // --- 2. MÓDULO CATÁLOGO (BUSCA PROFUNDA COM PONTUAÇÃO) ---
+            // Resolve o problema do "Item Catálogo DS" procurando no texto da Aplicação
+            const candidatosCatalogo = partsCatalog.map(p => {
+                let pontos = 0;
+                // Cria um texto único com tudo o que sabemos da peça
+                const textoPeca = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
                 
-                return perguntaLimpa.includes(codigoLimpo) || 
-                       (apenasNumero.length > 2 && perguntaLimpa.includes(apenasNumero)) ||
-                       searchTerm.includes(p.descricao.toUpperCase()) ||
-                       searchTerm.includes(p.aplicacao.toUpperCase());
-            }).slice(0, 5); // Top 5 resultados
+                // Regra 1: Código exato vale muito
+                const codigoLimpo = p.codigo.replace(/[^A-Z0-9]/g, '');
+                if (searchTerm.includes(codigoLimpo)) pontos += 100;
 
-            let infoCatalogo = "";
-            if (pecasEncontradas.length > 0) {
-                infoCatalogo = `
-                [CONSULTA AO CATÁLOGO DE PEÇAS - BASE DE DADOS OFICINA]
-                Encontrei estas opções exatas no nosso sistema:
-                ${pecasEncontradas.map(p => `- CÓDIGO: ${p.codigo} (${p.marca}) | PEÇA: ${p.descricao} | APLICAÇÃO: ${p.aplicacao}`).join('\n')}
+                // Regra 2: Palavras-chave valem pontos (Ex: Se tem "CORSA" e "ROTACAO" na aplicação)
+                palavrasChave.forEach(palavra => {
+                    if (textoPeca.includes(palavra)) pontos += 10;
+                });
+
+                return { peca: p, pontos: pontos };
+            })
+            .filter(item => item.pontos >= 10) // Só considera se tiver alguma relevância
+            .sort((a, b) => b.pontos - a.pontos) // Os mais relevantes primeiro
+            .slice(0, 5); // Pega o Top 5
+
+            if (candidatosCatalogo.length > 0) {
+                contextInjection += `
+                [CONSULTA AO CATÁLOGO TÉCNICO DA OFICINA]
+                Abaixo estão as peças encontradas no nosso banco de dados que podem servir.
+                ATENÇÃO SR AUTOMÓVEL: Algumas descrições podem estar genéricas (ex: "Item Catálogo"). LEIA A APLICAÇÃO PARA IDENTIFICAR A PEÇA.
                 
-                INSTRUÇÃO OBRIGATÓRIA: Se o usuário perguntou sobre aplicação ou detalhes de uma peça, use EXATAMENTE os dados acima. Não invente.
+                ${candidatosCatalogo.map(c => `> CÓDIGO: ${c.peca.codigo} (${c.peca.marca})\n  DESCRIÇÃO NO ARQUIVO: ${c.peca.descricao}\n  APLICAÇÃO REAL: ${c.peca.aplicacao}`).join('\n----------------\n')}
+                
+                INSTRUÇÃO DE SEGURANÇA: Se a peça encontrada (ex: DS 1917) parecer ser um sensor de Borboleta (TPS) e o usuário pediu Rotação, ALERTE A DIFERENÇA. Não confirme se não tiver certeza absoluta.
                 `;
             }
-            
-            // Adiciona a informação do catálogo ao contexto existente
-            if (contextInjection) {
-                contextInjection += "\n" + infoCatalogo;
-            } else {
-                contextInjection = infoCatalogo; // Se não achou carro, usa só o catálogo
-            }
 
-            const promptToSend = contextInjection ? (contextInjection + "\n\nPERGUNTA: " + text) : text;
+            // Montagem Final do Prompt
+            const promptToSend = contextInjection ? (contextInjection + "\n\nPERGUNTA DO USUÁRIO: " + text) : text;
 
             chatHistory.push({
                 role: "user",
@@ -430,7 +320,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: chatHistory,
-                        generationConfig: { temperature: 0.1 } 
+                        generationConfig: { temperature: 0.1 } // Temperatura baixa para ser preciso/técnico
                     })
                 });
 
@@ -470,20 +360,11 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             );
 
             if (maleVoice) utterance.voice = maleVoice;
-
             utterance.pitch = 0.6; 
             utterance.rate = 1.2;  
 
-            utterance.onstart = () => {
-                isSpeaking = true;
-                if (isTargetVisible) videoEl.play();
-            };
-
-            utterance.onend = () => {
-                isSpeaking = false;
-                videoEl.pause();
-                videoEl.currentTime = 0;
-            };
+            utterance.onstart = () => { isSpeaking = true; if (isTargetVisible) videoEl.play(); };
+            utterance.onend = () => { isSpeaking = false; videoEl.pause(); videoEl.currentTime = 0; };
 
             synthesis.speak(utterance);
         }
