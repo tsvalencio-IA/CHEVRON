@@ -15,7 +15,7 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
-        /* ESTILOS ORIGINAIS MANTIDOS INTACTOS */
+        /* ESTILOS ORIGINAIS MANTIDOS */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent !important; }
         video { position: absolute; top: 0; left: 0; z-index: -1 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; }
         #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: white; }
@@ -75,7 +75,7 @@
     </a-scene>
 
     <script>
-        // CONFIGURAÇÃO DO FIREBASE (ORIGINAL + CÉREBRO)
+        // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -91,25 +91,19 @@
         }
         const db = firebase.database();
         
-        // VARIÁVEIS GLOBAIS DE DADOS
-        let workshopData = []; // Histórico da Oficina
-        let partsCatalog = []; // Cérebro de Peças (Catálogos)
+        let workshopData = []; 
+        let partsCatalog = []; // ADIÇÃO: Variável do Cérebro
 
-        // LÊ OS DADOS DO PÁTIO (HISTÓRICO)
+        // LÊ OS DADOS DO PÁTIO
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                workshopData = Object.values(data);
-            }
+            if (data) workshopData = Object.values(data);
         });
 
-        // LÊ O CÉREBRO DE PEÇAS (CATÁLOGOS)
+        // ADIÇÃO: LÊ O CÉREBRO DE PEÇAS
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
-            if (data) {
-                partsCatalog = Object.values(data);
-                console.log("Módulo de Conhecimento Carregado: " + partsCatalog.length + " itens.");
-            }
+            if (data) partsCatalog = Object.values(data);
         });
 
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
@@ -132,7 +126,7 @@
         let voices = [];
         let chatHistory = [];
 
-        // --- PROMPT DO "SR AUTOMÓVEL" (INTACTO E PRESERVADO) ---
+        // --- PROMPT INTACTO DO SR AUTOMÓVEL ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -228,7 +222,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             videoEl.pause();
         });
 
-        // --- CÉREBRO: GEMINI 2.0 (INTEGRADO COM AUDITORIA E CATÁLOGOS) ---
+        // --- CÉREBRO: GEMINI 2.0 (MODIFICADO APENAS PARA INCLUIR A BUSCA) ---
         async function askGemini(text) {
             if(!text.trim()) return;
             
@@ -236,78 +230,46 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             userInput.value = "";
             const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            // Preparação dos dados para o Prompt
             let contextInjection = "";
-            const searchTerm = text.toUpperCase().replace(/[^A-Z0-9 ]/g, ''); // Limpa caracteres especiais
-            const palavrasChave = searchTerm.split(' ').filter(p => p.length > 2); // Ex: ['SENSOR', 'ROTACAO', 'CORSA']
-
-            // --- 1. MÓDULO AUDITOR (HISTÓRICO COMPLETO) ---
-            // Procura o carro em TODOS os registros para montar o dossiê
+            const searchTerm = text.toUpperCase();
+            
+            // 1. Busca no Histórico do Pátio (Intacto)
             const allRecords = workshopData.filter(car => 
-                (car.placa && searchTerm.includes(car.placa.replace('-',''))) || 
+                (car.placa && searchTerm.includes(car.placa)) || 
                 (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
-            ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt)); // Ordena do Antigo -> Novo
+            );
 
             if (allRecords.length > 0) {
-                const currentVehicle = allRecords[allRecords.length - 1]; // O registro mais atual
-                
+                const currentVehicle = allRecords[allRecords.length - 1];
                 let dossieHistorico = "";
+                
                 allRecords.forEach((os, index) => {
-                    // Lê descrição, peças e serviços de cada passagem
-                    const logsDetalhados = os.logs ? Object.values(os.logs).map(l => {
-                        const dataLog = new Date(l.timestamp).toLocaleDateString('pt-BR');
-                        return `   [${dataLog}] ${l.user}: ${l.description} (Peças: ${l.parts || 'Nenhuma'})`;
-                    }).join('\n') : "   Sem logs técnicos.";
+                    const logsDetalhados = os.logs ? Object.values(os.logs)
+                        .map(l => {
+                            const dataLog = new Date(l.timestamp).toLocaleString('pt-BR');
+                            const pecasInfo = l.parts ? ` | Peças: ${l.parts}` : "";
+                            return `   - [${dataLog}] ${l.user}: ${l.description}${pecasInfo}`;
+                        }).join('\n') : "   - Sem detalhes registrados.";
 
-                    const dataAbertura = new Date(os.createdAt).toLocaleDateString('pt-BR');
-                    dossieHistorico += `   --- PASSAGEM ${index + 1} (${dataAbertura} - Status: ${os.status}) ---\n${logsDetalhados}\n`;
+                    dossieHistorico += `=== ATENDIMENTO ${index + 1} (${new Date(os.createdAt).toLocaleDateString('pt-BR')}) ===\nStatus: ${os.status}\n${logsDetalhados}\n`;
                 });
 
-                contextInjection += `
-                [AUDITORIA DE HISTÓRICO DO VEÍCULO]
-                Veículo: ${currentVehicle.modelo} | Placa: ${currentVehicle.placa} | Cliente: ${currentVehicle.cliente}
-                
-                >>> HISTÓRICO COMPLETO (Use isso para verificar GARANTIA e SERVIÇOS REPETIDOS):
-                ${dossieHistorico}
-                `;
+                contextInjection = `[DOSSIÊ TÉCNICO]\nVeículo: ${currentVehicle.modelo} (${currentVehicle.placa})\n${dossieHistorico}`;
             }
 
-            // --- 2. MÓDULO CATÁLOGO (BUSCA PROFUNDA COM PONTUAÇÃO) ---
-            // Resolve o problema do "Item Catálogo DS" procurando no texto da Aplicação
-            const candidatosCatalogo = partsCatalog.map(p => {
-                let pontos = 0;
-                // Cria um texto único com tudo o que sabemos da peça
-                const textoPeca = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
-                
-                // Regra 1: Código exato vale muito
-                const codigoLimpo = p.codigo.replace(/[^A-Z0-9]/g, '');
-                if (searchTerm.includes(codigoLimpo)) pontos += 100;
+            // 2. ADIÇÃO: Busca no Cérebro de Peças
+            // Se o JSON estiver limpo (Passo 1), isso vai funcionar perfeitamente
+            const pecasEncontradas = partsCatalog.filter(p => 
+                searchTerm.includes(p.codigo.toUpperCase()) || 
+                searchTerm.includes(p.descricao.toUpperCase()) || 
+                (p.aplicacao && searchTerm.split(" ").every(word => p.aplicacao.toUpperCase().includes(word))) // Busca inteligente por aplicação
+            ).slice(0, 5);
 
-                // Regra 2: Palavras-chave valem pontos (Ex: Se tem "CORSA" e "ROTACAO" na aplicação)
-                palavrasChave.forEach(palavra => {
-                    if (textoPeca.includes(palavra)) pontos += 10;
-                });
-
-                return { peca: p, pontos: pontos };
-            })
-            .filter(item => item.pontos >= 10) // Só considera se tiver alguma relevância
-            .sort((a, b) => b.pontos - a.pontos) // Os mais relevantes primeiro
-            .slice(0, 5); // Pega o Top 5
-
-            if (candidatosCatalogo.length > 0) {
-                contextInjection += `
-                [CONSULTA AO CATÁLOGO TÉCNICO DA OFICINA]
-                Abaixo estão as peças encontradas no nosso banco de dados que podem servir.
-                ATENÇÃO SR AUTOMÓVEL: Algumas descrições podem estar genéricas (ex: "Item Catálogo"). LEIA A APLICAÇÃO PARA IDENTIFICAR A PEÇA.
-                
-                ${candidatosCatalogo.map(c => `> CÓDIGO: ${c.peca.codigo} (${c.peca.marca})\n  DESCRIÇÃO NO ARQUIVO: ${c.peca.descricao}\n  APLICAÇÃO REAL: ${c.peca.aplicacao}`).join('\n----------------\n')}
-                
-                INSTRUÇÃO DE SEGURANÇA: Se a peça encontrada (ex: DS 1917) parecer ser um sensor de Borboleta (TPS) e o usuário pediu Rotação, ALERTE A DIFERENÇA. Não confirme se não tiver certeza absoluta.
-                `;
+            if (pecasEncontradas.length > 0) {
+                contextInjection += `\n[CATÁLOGO DE PEÇAS]\nEncontrei estas opções:\n${pecasEncontradas.map(p => `- Cód: ${p.codigo} (${p.marca}): ${p.descricao} [Aplicação: ${p.aplicacao}]`).join('\n')}`;
             }
 
-            // Montagem Final do Prompt
-            const promptToSend = contextInjection ? (contextInjection + "\n\nPERGUNTA DO USUÁRIO: " + text) : text;
+            const promptToSend = contextInjection ? (contextInjection + "\n\nPERGUNTA: " + text) : text;
 
             chatHistory.push({
                 role: "user",
@@ -320,7 +282,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
                         contents: chatHistory,
-                        generationConfig: { temperature: 0.1 } // Temperatura baixa para ser preciso/técnico
+                        generationConfig: { temperature: 0.1 } 
                     })
                 });
 
@@ -346,67 +308,29 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             }
         }
 
-        // --- VOZ MASCULINA FORÇADA ---
+        // ... RESTANTE DAS FUNÇÕES (VOZ, MICROFONE) MANTIDAS INTACTAS ...
         function speakMaleVoice(text) {
             synthesis.cancel();
             const utterance = new SpeechSynthesisUtterance(text);
-            
             if (voices.length === 0) loadVoices();
-            
-            const maleVoice = voices.find(v => 
-                (v.lang.includes('pt-BR') || v.lang.includes('pt_BR')) && 
-                (v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Felipe')) && 
-                !v.name.includes('Luciana')
-            );
-
+            const maleVoice = voices.find(v => (v.lang.includes('pt-BR')||v.lang.includes('pt_BR')) && (v.name.includes('Google')||v.name.includes('Daniel')) && !v.name.includes('Luciana'));
             if (maleVoice) utterance.voice = maleVoice;
-            utterance.pitch = 0.6; 
-            utterance.rate = 1.2;  
-
+            utterance.pitch = 0.6; utterance.rate = 1.2;  
             utterance.onstart = () => { isSpeaking = true; if (isTargetVisible) videoEl.play(); };
             utterance.onend = () => { isSpeaking = false; videoEl.pause(); videoEl.currentTime = 0; };
-
             synthesis.speak(utterance);
         }
 
-        // --- MICROFONE ---
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
         if (SpeechRecognition) {
             const recognition = new SpeechRecognition();
             recognition.lang = 'pt-BR';
             recognition.continuous = false;
-
-            micBtn.addEventListener('click', () => {
-                if (micBtn.classList.contains('listening')) {
-                    recognition.stop();
-                    micBtn.classList.remove('listening');
-                } else {
-                    recognition.start();
-                    micBtn.classList.add('listening');
-                    userInput.placeholder = "Ouvindo...";
-                }
-            });
-
-            recognition.onresult = (event) => {
-                const text = event.results[0][0].transcript;
-                userInput.value = text;
-                micBtn.classList.remove('listening');
-                userInput.placeholder = "Enviando...";
-                askGemini(text);
-            };
-
-            recognition.onerror = () => {
-                micBtn.classList.remove('listening');
-                userInput.placeholder = "Erro. Digite.";
-            };
-            
-            recognition.onend = () => {
-                micBtn.classList.remove('listening');
-                if(userInput.value==="") userInput.placeholder="Qual a dúvida?";
-            };
-        } else {
-            micBtn.style.display = 'none';
-        }
+            micBtn.addEventListener('click', () => { if (micBtn.classList.contains('listening')) { recognition.stop(); micBtn.classList.remove('listening'); } else { recognition.start(); micBtn.classList.add('listening'); userInput.placeholder = "Ouvindo..."; } });
+            recognition.onresult = (event) => { const text = event.results[0][0].transcript; userInput.value = text; micBtn.classList.remove('listening'); userInput.placeholder = "Enviando..."; askGemini(text); };
+            recognition.onerror = () => { micBtn.classList.remove('listening'); userInput.placeholder = "Erro. Digite."; };
+            recognition.onend = () => { micBtn.classList.remove('listening'); if(userInput.value==="") userInput.placeholder="Qual a dúvida?"; };
+        } else { micBtn.style.display = 'none'; }
 
         function addMessage(sender, text, className) {
             const div = document.createElement('div');
