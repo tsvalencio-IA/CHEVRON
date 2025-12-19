@@ -170,6 +170,7 @@
         }
         const db = firebase.database();
         let workshopData = []; // Aqui ficam os carros do pátio
+        let partsCatalog = []; // NOVO: Catálogo de peças
 
         // LÊ OS DADOS DO PÁTIO EM TEMPO REAL PARA A IA USAR
         db.ref('serviceOrders').on('value', (snapshot) => {
@@ -177,6 +178,15 @@
             if (data) {
                 workshopData = Object.values(data);
                 console.log("thIAguinho conectou ao pátio: " + workshopData.length + " veículos.");
+            }
+        });
+
+        // --- NOVO: LÊ O CÉREBRO DE PEÇAS ---
+        db.ref('catalogs').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                partsCatalog = Object.values(data);
+                console.log("Cérebro de Peças carregado: " + partsCatalog.length + " itens.");
             }
         });
 
@@ -301,7 +311,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             videoEl.pause();
         });
 
-        // --- CÉREBRO: GEMINI 2.0 (MODIFICADO PARA LER workshopData) ---
+        // --- CÉREBRO: GEMINI 2.0 (MODIFICADO PARA LER workshopData e Cátalogo) ---
         async function askGemini(text) {
             if(!text.trim()) return;
             
@@ -309,7 +319,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
             userInput.value = "";
             const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            // --- INJEÇÃO DE CONTEXTO DO PÁTIO (NOVIDADE) ---
+            // --- INJEÇÃO DE CONTEXTO DO PÁTIO ---
             let contextInjection = "";
             const searchTerm = text.toUpperCase();
             
@@ -335,7 +345,6 @@ Siga esta hierarquia rigorosa ao recomendar peças:
                 let dossieHistorico = "";
                 
                 allRecords.forEach((os, index) => {
-                    // CORREÇÃO CRÍTICA: Agora lê a DESCRIÇÃO, não só as peças.
                     const logsDetalhados = os.logs ? Object.values(os.logs)
                         .map(l => {
                             const dataLog = new Date(l.timestamp).toLocaleString('pt-BR');
@@ -355,7 +364,7 @@ Siga esta hierarquia rigorosa ao recomendar peças:
                     ========================================\n`;
                 });
 
-                // 5. Injeta no cérebro da IA
+                // 5. Injeta no cérebro da IA (Dados do Veículo)
                 contextInjection = `
                 [DOSSIÊ TÉCNICO COMPLETO DO VEÍCULO]
                 Veículo: ${currentVehicle.modelo} (Placa: ${currentVehicle.placa})
@@ -370,6 +379,31 @@ Siga esta hierarquia rigorosa ao recomendar peças:
                 2. Se perguntarem "O que foi feito?", cite os detalhes do histórico (ex: "O técnico João trocou tal peça dia tal").
                 3. Se pedirem para trocar algo que JÁ FOI TROCADO recentemente, alerte sobre a garantia.
                 `;
+            }
+
+            // --- NOVO: BUSCA NO CÉREBRO DE PEÇAS (CATÁLOGO) ---
+            const pecasEncontradas = partsCatalog.filter(p => 
+                searchTerm.includes(p.aplicacao.toUpperCase()) || // Se falou o carro (ex: "Onix")
+                searchTerm.includes(p.descricao.toUpperCase()) || // Se falou a peça (ex: "Pastilha")
+                searchTerm.includes(p.codigo.toUpperCase())       // Se falou o código
+            ).slice(0, 5); // Pega só as top 5 para não lotar a memória
+
+            let infoCatalogo = "";
+            if (pecasEncontradas.length > 0) {
+                infoCatalogo = `
+                [CONSULTA AO CATÁLOGO DE PEÇAS]
+                Encontrei estas opções no banco de dados da oficina:
+                ${pecasEncontradas.map(p => `- ${p.marca} (Cód: ${p.codigo}): ${p.descricao} [Aplicação: ${p.aplicacao}]`).join('\n')}
+                
+                INSTRUÇÃO: Se a pergunta for sobre aplicação de peças, use os códigos acima.
+                `;
+            }
+            
+            // Adiciona a informação do catálogo ao contexto existente
+            if (contextInjection) {
+                contextInjection += "\n" + infoCatalogo;
+            } else {
+                contextInjection = infoCatalogo; // Se não achou carro, usa só o catálogo
             }
 
             const promptToSend = contextInjection ? (contextInjection + "\n\nPERGUNTA: " + text) : text;
