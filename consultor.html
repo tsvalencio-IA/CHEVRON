@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho V10 - VARREDURA NUCLEAR</title>
+    <title>thIAguinho V12 - A VERSÃO MONOLITO</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -14,40 +14,41 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
-        /* ESTRUTURA BASE */
+        /* 2. ESTILOS VISUAIS (UI COMPLETA) */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; font-family: 'Roboto', sans-serif; }
         
-        /* 1. BARRA DE DIAGNÓSTICO */
+        /* BARRA DE STATUS (DEBUGGER) */
         #system-status {
             position: fixed; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.9); color: #facc15; 
-            padding: 8px; z-index: 999999; text-align: center;
+            padding: 6px; z-index: 999999; text-align: center;
             font-size: 11px; font-weight: bold; border-bottom: 2px solid #facc15;
-            pointer-events: none;
+            pointer-events: none; white-space: pre-wrap;
         }
         .status-ok { color: #4ade80 !important; border-bottom-color: #4ade80 !important; }
         .status-err { color: #f87171 !important; border-bottom-color: #f87171 !important; }
 
-        /* 2. BOTÃO VOLTAR */
+        /* BOTÃO VOLTAR (RESTAURADO) */
         #backBtn {
-            position: fixed; top: 40px; left: 15px; 
+            position: fixed; top: 50px; left: 15px; 
             width: 45px; height: 45px; border-radius: 50%;
             background: rgba(0,0,0,0.6); border: 2px solid #fff;
             color: white; font-size: 24px; display: flex;
             align-items: center; justify-content: center;
             cursor: pointer; z-index: 10001;
-            transition: transform 0.2s;
+            transition: transform 0.2s; box-shadow: 0 4px 10px rgba(0,0,0,0.5);
         }
         #backBtn:active { transform: scale(0.9); }
 
-        /* 3. MIRA / SCAN OVERLAY */
+        /* MIRA / SCAN OVERLAY (RESTAURADO) */
         #scan-overlay {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
             border: 4px solid rgba(255, 255, 255, 0.5); border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); 
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6); /* Efeito escurecer */
             z-index: 5000; pointer-events: none;
             display: flex; align-items: center; justify-content: center;
+            transition: opacity 0.3s;
         }
         #scan-overlay::after {
             content: "APONTE PARA O LOGO";
@@ -55,9 +56,9 @@
             margin-top: 20px; text-shadow: 0 2px 4px black;
             position: absolute; bottom: -40px; width: 100%; text-align: center;
         }
-        .hidden { display: none !important; }
+        .hidden { opacity: 0; pointer-events: none; }
 
-        /* 4. INTERFACE DE CHAT */
+        /* CHAT UI */
         #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
         .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
         #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; scroll-behavior: smooth; }
@@ -83,7 +84,7 @@
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO VARREDURA NUCLEAR...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA MONOLITO...</div>
 
     <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
 
@@ -94,7 +95,7 @@
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Aguarde Carregamento..." autocomplete="off" disabled>
+                <input type="text" id="userInput" placeholder="Carregando Base..." autocomplete="off" disabled>
                 <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -111,7 +112,7 @@
     </a-scene>
 
     <script>
-        // 1. CONFIGURAÇÃO FIREBASE
+        // 3. CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -124,7 +125,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // 2. VARIÁVEIS DE ESTADO
+        // 4. VARIÁVEIS GLOBAIS
         let partsCatalog = [];
         let workshopData = [];
         const statusEl = document.getElementById('system-status');
@@ -133,65 +134,37 @@
         const micBtn = document.getElementById('micBtn');
         const overlay = document.getElementById('scan-overlay');
 
-        // --- FUNÇÃO NUCLEAR DE EXTRAÇÃO (V10) ---
-        // Esta função entra em CADA buraco do JSON e tira tudo o que parece peça
-        function nuclearExtract(node) {
-            let extractedMap = new Map(); // Mapa para garantir unicidade pelo código
-
-            function traverse(item) {
-                if (!item) return;
-
-                // 1. É uma PEÇA? (Tem código e descrição)
-                // Verifica se é objeto e se tem as chaves mágicas
-                if (typeof item === 'object' && item !== null) {
-                    // Normalização para pegar chaves mesmo se tiverem caixa alta/baixa
-                    const keys = Object.keys(item).map(k => k.toLowerCase());
-                    const hasCode = keys.includes('codigo');
-                    const hasDesc = keys.includes('descricao');
-
-                    if (hasCode && hasDesc) {
-                        // ACHOU UMA PEÇA!
-                        // Usa o código como ID único para não duplicar
-                        const codeVal = String(item.codigo || item.Codigo || item.CODIGO).trim().toUpperCase();
-                        if (codeVal.length > 2 && !extractedMap.has(codeVal)) {
-                            extractedMap.set(codeVal, item);
-                        }
-                        // Nota: Não retornamos aqui pq pode haver peças aninhadas (raro, mas possível)
-                    }
-                }
-
-                // 2. RECURSÃO (Mergulhar mais fundo)
-                if (Array.isArray(item)) {
-                    // Se for lista, varre cada item
-                    item.forEach(subItem => traverse(subItem));
-                } else if (typeof item === 'object' && item !== null) {
-                    // Se for objeto, varre cada valor
-                    Object.values(item).forEach(child => traverse(child));
-                }
-            }
-
-            traverse(node);
-            return Array.from(extractedMap.values());
-        }
-
-        // 3. CARREGAMENTO BLINDADO DE DADOS
+        // 5. CARREGAMENTO DE DADOS (UNIVERSAL)
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
+            let debugMsg = "";
             
             if (data) {
-                // APLICA A EXTRAÇÃO NUCLEAR
-                partsCatalog = nuclearExtract(data);
-                
-                // DIAGNÓSTICO VISUAL
-                console.log("Total de peças extraídas:", partsCatalog.length);
+                // LÓGICA V11: Se é Lista, aceita. Se é Objeto, converte.
+                if (Array.isArray(data)) {
+                    partsCatalog = data;
+                    debugMsg = "MODO: LISTA PURA (ARRAY)";
+                } else if (typeof data === 'object') {
+                    partsCatalog = Object.values(data);
+                    debugMsg = "MODO: DICIONÁRIO (CONVERTIDO)";
+                }
+
+                // VALIDAÇÃO VISUAL
+                if (partsCatalog.length > 893) {
+                    statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS ATIVAS`;
+                    statusEl.className = "status-ok";
+                } else {
+                    statusEl.innerHTML = `ALERTA: ${partsCatalog.length} PEÇAS CARREGADAS. VERIFIQUE O UPLOAD.\n${debugMsg}`;
+                    statusEl.className = "status-err";
+                }
                 checkReadiness();
             } else {
-                statusEl.innerText = "ERRO: CÉREBRO VAZIO! BANCO DE DADOS SEM PEÇAS.";
+                statusEl.innerText = "ERRO: BANCO DE DADOS VAZIO.";
                 statusEl.className = "status-err";
             }
         });
 
-        // Carrega Histórico de Serviços (INTACTO)
+        // Carrega Histórico
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) workshopData = Object.values(data);
@@ -199,20 +172,18 @@
 
         function checkReadiness() {
             if (partsCatalog.length > 0) {
-                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS CARREGADAS`;
-                statusEl.className = "status-ok";
                 inputEl.disabled = false; sendBtn.disabled = false; micBtn.disabled = false;
                 inputEl.placeholder = "Pode perguntar ao thIAguinho...";
             }
         }
 
-        // 4. CONFIGURAÇÃO DA IA (GEMINI)
+        // 6. CONFIGURAÇÃO IA (GEMINI) + PROMPT MESTRE INTEGRAL
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
         const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
         let chatHistory = [];
         
-        // --- PROMPT MESTRE: SR. AUTOMÓVEL (INTEGRAL) ---
+        // --- AQUI ESTÁ A ALMA COMPLETA DO ROBÔ (SEM CORTES) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -274,30 +245,30 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
         chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema Operacional da Oficina (SR AUTOMÓVEL) carregado com sucesso." }] });
 
-        // 5. MOTOR DE INTELIGÊNCIA (Busca + IA)
+        // 7. LÓGICA DE PERGUNTA
         async function askGemini(text) {
             if(!text.trim()) return;
             
-            // --- MODO PERITO (Busca Direta por Código) ---
+            // --- MODO PERITO (Busca Direta) ---
             if (/^\d+$/.test(text) || /^DS\s*\d+$/i.test(text)) {
                 const codeSearch = text.toUpperCase().replace("DS", "").trim();
                 const found = partsCatalog.find(p => p.codigo && String(p.codigo).includes(codeSearch));
                 addMessage("Você", text, "msg-user");
                 if (found) {
-                    addMessage("SISTEMA", `<div class="debug-info"><strong>DADO BRUTO ENCONTRADO:</strong><br>CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
+                    addMessage("SISTEMA", `<div class="debug-info"><strong>DADO BRUTO:</strong><br>CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
                     speak(`Peça ${found.codigo} localizada: ${found.descricao}.`);
                 } else {
-                    addMessage("SISTEMA", `O código ${codeSearch} não existe no arquivo carregado.`, "msg-ai status-err");
-                    speak("Código não encontrado na base de dados.");
+                    addMessage("SISTEMA", `Código ${codeSearch} não existe na base (${partsCatalog.length} itens).`, "msg-ai status-err");
+                    speak("Código não encontrado.");
                 }
                 inputEl.value = ""; return;
             }
 
             addMessage("Você", text, "msg-user");
             inputEl.value = "";
-            const loadingMsg = addMessage("thIAguinho", "Analisando dados...", "msg-ai");
+            const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            // A. BUSCA NO HISTÓRICO (Memória)
+            // A. HISTÓRICO
             const searchTerm = text.toUpperCase();
             const allRecords = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa.toUpperCase())) || 
@@ -314,20 +285,18 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 contextInjection += `[HISTÓRICO REAL DO VEÍCULO]\n${dossie}\n\n`;
             }
 
-            // B. BUSCA NO CATÁLOGO (Cérebro - AGORA COM TUDO)
+            // B. CATÁLOGO (Busca Inteligente)
             const terms = searchTerm.split(" ").filter(t => t.length > 2);
-            
-            // Filtro mais permissivo para achar qualquer coisa
             const candidatos = partsCatalog.filter(p => {
                 if(!p.codigo) return false;
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
                 return fullText.includes(searchTerm) || terms.every(term => fullText.includes(term));
-            }).slice(0, 8); 
+            }).slice(0, 10);
 
             if (candidatos.length > 0) {
-                contextInjection += `[DADOS OFICIAIS DO CATÁLOGO DS]\n`;
+                contextInjection += `[DADOS OFICIAIS DO CATÁLOGO]\n`;
                 candidatos.forEach(c => {
-                    contextInjection += `>> PEÇA: ${c.codigo} | TIPO: ${c.descricao} | APLICAÇÃO: ${c.aplicacao}\n`;
+                    contextInjection += `>> PEÇA: ${c.codigo} | ${c.descricao} | ${c.aplicacao}\n`;
                 });
             } else {
                 contextInjection += `[CATÁLOGO] Nenhuma peça encontrada para "${text}".\n`;
@@ -348,8 +317,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 addMessage("thIAguinho", aiText, "msg-ai");
                 speak(aiText);
             } catch (error) {
-                loadingMsg.innerText = "Erro de conexão.";
-                console.error(error);
+                loadingMsg.innerText = "Erro.";
             }
         }
 
@@ -363,7 +331,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             return div;
         }
 
-        // 6. VOZ E AR (MIRA E SÍNTESE)
+        // 8. VOZ E REALIDADE AUMENTADA (MIRA E CONTROLE)
         const videoEl = document.querySelector('#mascoteVideo');
         const targetEntity = document.querySelector('#target-entity');
         let isSpeaking = false; let isTargetVisible = false;
@@ -371,24 +339,19 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         function speak(text) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'pt-BR';
-            u.rate = 1.1;
-
+            u.lang = 'pt-BR'; u.rate = 1.1;
+            
             // Lógica de Voz Masculina
             const voices = window.speechSynthesis.getVoices();
-            const maleVoice = voices.find(v => 
-                (v.lang.includes('pt') || v.lang.includes('BR')) && 
-                (v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Male')) && 
-                !v.name.includes('Luciana') && !v.name.includes('Fernanda')
-            );
-
-            if (maleVoice) {
-                u.voice = maleVoice;
+            const maleVoice = voices.find(v => (v.lang.includes('pt') || v.lang.includes('BR')) && (v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Male')) && !v.name.includes('Luciana') && !v.name.includes('Fernanda'));
+            
+            if (maleVoice) { 
+                u.voice = maleVoice; 
                 u.pitch = 0.9; 
-            } else {
-                u.pitch = 0.6; // Força tom grave
+            } else { 
+                u.pitch = 0.7; // Fallback grave
             }
-
+            
             u.onstart = () => { isSpeaking = true; if(isTargetVisible) videoEl.play(); };
             u.onend = () => { isSpeaking = false; videoEl.pause(); videoEl.currentTime=0; };
             window.speechSynthesis.speak(u);
@@ -397,12 +360,12 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         // Controle da Mira (Overlay)
         targetEntity.addEventListener("targetFound", () => { 
             isTargetVisible = true; 
-            overlay.classList.add('hidden'); // Esconde a mira
+            overlay.classList.add('hidden'); // Some a mira
             if(isSpeaking) videoEl.play(); 
         });
         targetEntity.addEventListener("targetLost", () => { 
             isTargetVisible = false; 
-            overlay.classList.remove('hidden'); // Mostra a mira
+            overlay.classList.remove('hidden'); // Aparece a mira
             videoEl.pause(); 
         });
 
@@ -413,7 +376,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             r.onresult = (e) => { inputEl.value = e.results[0][0].transcript; micBtn.classList.remove('listening'); inputEl.placeholder="Enviando..."; askGemini(inputEl.value); };
             r.onend = () => micBtn.classList.remove('listening');
         } else micBtn.style.display = 'none';
-
+        
         sendBtn.addEventListener('click', () => askGemini(inputEl.value));
         inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendBtn.click(); });
     </script>
