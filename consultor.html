@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho - V. FINAL PT-BR</title>
+    <title>thIAguinho - V7 INTEGRAL</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -16,7 +16,7 @@
     <style>
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; font-family: 'Roboto', sans-serif; }
         
-        /* BARRA DE DIAGNÓSTICO (A VERDADE VISUAL) */
+        /* DIAGNÓSTICO VISUAL */
         #system-status {
             position: fixed; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.9); color: #facc15; 
@@ -26,7 +26,7 @@
         .status-ok { color: #4ade80 !important; }
         .status-err { color: #f87171 !important; }
 
-        /* UI */
+        /* UI CHAT */
         #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
         .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
         #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; }
@@ -51,14 +51,14 @@
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA COMPLETO...</div>
 
     <div id="ui-layer">
         <div class="chat-container">
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Carregando Conhecimento..." autocomplete="off" disabled>
+                <input type="text" id="userInput" placeholder="Carregando Base de Dados..." autocomplete="off" disabled>
                 <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -73,7 +73,7 @@
     </a-scene>
 
     <script>
-        // 1. FIREBASE
+        // 1. FIREBASE CONFIG
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -93,18 +93,28 @@
         const sendBtn = document.getElementById('sendBtn');
         const micBtn = document.getElementById('micBtn');
 
-        // 2. CARREGAMENTO (CÉREBRO + MEMÓRIA)
+        // 2. CARREGAMENTO (UNIVERSAL + MEMÓRIA)
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                partsCatalog = Object.values(data);
+                // LÓGICA DE CORREÇÃO DE ESTRUTURA (V6)
+                if (Array.isArray(data)) {
+                    partsCatalog = data;
+                } else if (typeof data === 'object') {
+                    if (data.pecas && Array.isArray(data.pecas)) {
+                        partsCatalog = data.pecas;
+                    } else {
+                        partsCatalog = Object.values(data);
+                    }
+                }
                 checkReadiness();
             } else {
-                statusEl.innerText = "ERRO: CÉREBRO VAZIO! INJETE O JSON NO CEREBRO.HTML";
+                statusEl.innerText = "ERRO: CÉREBRO VAZIO! FAÇA O UPLOAD.";
                 statusEl.className = "status-err";
             }
         });
 
+        // MEMÓRIA DE HISTÓRICO (RESTAURADA DO V5)
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) workshopData = Object.values(data);
@@ -115,18 +125,17 @@
                 statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS + MEMÓRIA ATIVA`;
                 statusEl.className = "status-ok";
                 inputEl.disabled = false; sendBtn.disabled = false; micBtn.disabled = false;
-                inputEl.placeholder = "Dúvida Técnica ou Peça?";
+                inputEl.placeholder = "Pode perguntar...";
             }
         }
 
-        // 3. IA CONFIG (PROMPT MESTRE RESTAURADO)
+        // 3. IA CONFIG
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
         const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
-
         let chatHistory = [];
         
-        // --- ALMA DO THIAGUINHO (SR AUTOMÓVEL) ---
+        // --- PROMPT MESTRE (RESTAURADO INTEGRALMENTE) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -173,11 +182,6 @@ Siga esta hierarquia rigorosa ao recomendar peças:
 
 *REGRA DE OURO:* Sempre mande conferir o CÓDIGO GRAVADO na peça velha antes de pedir. Catálogos erram.
 
---- ALGORITMO DE DIAGNÓSTICO (ZERO ALUCINAÇÃO) ---
-1. PATTERN FAILURE (VÍCIOS): O carro tem defeito crônico disso? (Ex: Trocador de calor Compass, Correia Onix, Powershift Ford).
-2. LÓGICA: O que causa o sintoma? (Ar, Combustível, Centelha, Compressão, Sincronismo).
-3. TESTE: Qual o teste irrefutável? (Transdutor de vácuo, Compressão relativa, Queda de tensão).
-
 --- INSTRUÇÃO ESPECIAL DE DADOS ---
 Você terá acesso a dois blocos de informação REAL injetados a cada pergunta:
 1. [HISTÓRICO DO VEÍCULO]: O que já foi feito neste carro na nossa oficina. Use para checar GARANTIA e REINCIDÊNCIA.
@@ -185,24 +189,23 @@ Você terá acesso a dois blocos de informação REAL injetados a cada pergunta:
 
 SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
 `;
-
         chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
         chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema Operacional da Oficina (SR AUTOMÓVEL) carregado com sucesso." }] });
 
-        // 4. LÓGICA DE PERGUNTA
+        // 4. LÓGICA DE PERGUNTA COMPLETA
         async function askGemini(text) {
             if(!text.trim()) return;
             
-            // MODO DEBUG
+            // MODO DEBUG DIRETO
             if (/^\d+$/.test(text) || /^DS\s*\d+$/i.test(text)) {
                 const codeSearch = text.toUpperCase().replace("DS", "").trim();
-                const found = partsCatalog.find(p => p.codigo.includes(codeSearch));
+                const found = partsCatalog.find(p => p.codigo && p.codigo.includes(codeSearch));
                 addMessage("Você", text, "msg-user");
                 if (found) {
                     addMessage("SISTEMA", `<div class="debug-info">CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
                     speak(`Peça ${found.codigo} encontrada: ${found.descricao}.`);
                 } else {
-                    addMessage("SISTEMA", `Código ${codeSearch} não encontrado no Cérebro.`, "msg-ai status-err");
+                    addMessage("SISTEMA", `Código ${codeSearch} não encontrado.`, "msg-ai status-err");
                     speak("Código não encontrado.");
                 }
                 inputEl.value = ""; return;
@@ -212,7 +215,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             inputEl.value = "";
             const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            // A. BUSCA NO HISTÓRICO
+            // A. BUSCA NO HISTÓRICO (RESTAURADA)
             const searchTerm = text.toUpperCase();
             const allRecords = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa.toUpperCase())) || 
@@ -229,9 +232,10 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 contextInjection += `[HISTÓRICO REAL DO VEÍCULO NA OFICINA]\n${dossie}\n\n`;
             }
 
-            // B. BUSCA NO CATÁLOGO
+            // B. BUSCA NO CATÁLOGO (INTELIGENTE)
             const terms = searchTerm.split(" ").filter(t => t.length > 2);
             const candidatos = partsCatalog.filter(p => {
+                if(!p.codigo) return false;
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
                 return fullText.includes(searchTerm) || terms.every(term => fullText.includes(term));
             }).slice(0, 10);
@@ -250,8 +254,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
+                    method: 'POST', headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ contents: chatHistory })
                 });
                 const data = await response.json();
@@ -273,7 +276,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             return div;
         }
 
-        // --- CORREÇÃO DA VOZ (PT-BR MASCULINA) ---
+        // --- VOZ MASCULINA FORÇADA (V6) ---
         const videoEl = document.querySelector('#mascoteVideo');
         const targetEntity = document.querySelector('#target-entity');
         let isSpeaking = false; let isTargetVisible = false;
@@ -281,24 +284,21 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         function speak(text) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(text);
-            u.lang = 'pt-BR'; // <--- OBRIGATÓRIO PARA NÃO FALAR INGLÊS
-            u.rate = 1.1; // Velocidade natural
-            
-            // Lógica avançada para achar voz PT-BR Masculina
-            const voices = window.speechSynthesis.getVoices();
-            const ptVoices = voices.filter(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
-            
-            // 1. Tenta voz Google Masculina (Android/Chrome)
-            let targetVoice = ptVoices.find(v => v.name.includes("Google") && !v.name.includes("Luciana"));
-            // 2. Tenta Daniel (iOS)
-            if (!targetVoice) targetVoice = ptVoices.find(v => v.name.includes("Daniel"));
-            // 3. Pega qualquer PT-BR se não achar as de cima
-            if (!targetVoice) targetVoice = ptVoices[0];
+            u.lang = 'pt-BR';
+            u.rate = 1.1;
 
-            if (targetVoice) {
-                u.voice = targetVoice;
-                // Ajuste de tom para parecer mais masculino se for Google
-                if(targetVoice.name.includes("Google")) u.pitch = 0.8; 
+            const voices = window.speechSynthesis.getVoices();
+            const maleVoice = voices.find(v => 
+                (v.lang.includes('pt') || v.lang.includes('BR')) && 
+                (v.name.includes('Google') || v.name.includes('Daniel') || v.name.includes('Male')) && 
+                !v.name.includes('Luciana') && !v.name.includes('Fernanda')
+            );
+
+            if (maleVoice) {
+                u.voice = maleVoice;
+                u.pitch = 0.9; 
+            } else {
+                u.pitch = 0.6; // Fallback grave
             }
 
             u.onstart = () => { isSpeaking = true; if(isTargetVisible) videoEl.play(); };
@@ -309,7 +309,6 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         targetEntity.addEventListener("targetFound", () => { isTargetVisible = true; if(isSpeaking) videoEl.play(); });
         targetEntity.addEventListener("targetLost", () => { isTargetVisible = false; videoEl.pause(); });
 
-        // Microfone
         if (window.webkitSpeechRecognition) {
             const r = new webkitSpeechRecognition(); r.lang = 'pt-BR';
             micBtn.addEventListener('click', () => { if(micBtn.classList.contains('listening')) { r.stop(); micBtn.classList.remove('listening'); } else { r.start(); micBtn.classList.add('listening'); inputEl.placeholder="Ouvindo..."; } });
