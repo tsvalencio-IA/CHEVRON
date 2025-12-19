@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho - ORIGINAL & COMPLETO</title>
+    <title>thIAguinho - V. FINAL PT-BR</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -126,7 +126,7 @@
 
         let chatHistory = [];
         
-        // --- AQUI ESTÁ A ALMA DE VOLTA (INTACTA) ---
+        // --- ALMA DO THIAGUINHO (SR AUTOMÓVEL) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -189,11 +189,11 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
         chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema Operacional da Oficina (SR AUTOMÓVEL) carregado com sucesso." }] });
 
-        // 4. LÓGICA DE PERGUNTA (CÉREBRO + HISTÓRICO RESTAURADO)
+        // 4. LÓGICA DE PERGUNTA
         async function askGemini(text) {
             if(!text.trim()) return;
             
-            // MODO DEBUG RÁPIDO (Só Códigos - Para testar se o JSON subiu)
+            // MODO DEBUG
             if (/^\d+$/.test(text) || /^DS\s*\d+$/i.test(text)) {
                 const codeSearch = text.toUpperCase().replace("DS", "").trim();
                 const found = partsCatalog.find(p => p.codigo.includes(codeSearch));
@@ -212,7 +212,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             inputEl.value = "";
             const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            // A. BUSCA NO HISTÓRICO (AUDITORIA) - A MEMÓRIA DO GESTOR
+            // A. BUSCA NO HISTÓRICO
             const searchTerm = text.toUpperCase();
             const allRecords = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa.toUpperCase())) || 
@@ -220,7 +220,6 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
             let contextInjection = "";
-            
             if (allRecords.length > 0) {
                 const currentVehicle = allRecords[allRecords.length - 1];
                 let dossie = allRecords.map((os, i) => {
@@ -230,7 +229,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 contextInjection += `[HISTÓRICO REAL DO VEÍCULO NA OFICINA]\n${dossie}\n\n`;
             }
 
-            // B. BUSCA NO CATÁLOGO (PEÇAS) - A MENTE DO ALMOXARIFE
+            // B. BUSCA NO CATÁLOGO
             const terms = searchTerm.split(" ").filter(t => t.length > 2);
             const candidatos = partsCatalog.filter(p => {
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
@@ -274,7 +273,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             return div;
         }
 
-        // Voz e AR
+        // --- CORREÇÃO DA VOZ (PT-BR MASCULINA) ---
         const videoEl = document.querySelector('#mascoteVideo');
         const targetEntity = document.querySelector('#target-entity');
         let isSpeaking = false; let isTargetVisible = false;
@@ -282,10 +281,25 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         function speak(text) {
             window.speechSynthesis.cancel();
             const u = new SpeechSynthesisUtterance(text);
-            u.pitch = 0.6; u.rate = 1.2;
+            u.lang = 'pt-BR'; // <--- OBRIGATÓRIO PARA NÃO FALAR INGLÊS
+            u.rate = 1.1; // Velocidade natural
+            
+            // Lógica avançada para achar voz PT-BR Masculina
             const voices = window.speechSynthesis.getVoices();
-            const male = voices.find(v => v.name.includes("Google") && !v.name.includes("Luciana"));
-            if(male) u.voice = male;
+            const ptVoices = voices.filter(v => v.lang.includes('pt-BR') || v.lang.includes('pt_BR'));
+            
+            // 1. Tenta voz Google Masculina (Android/Chrome)
+            let targetVoice = ptVoices.find(v => v.name.includes("Google") && !v.name.includes("Luciana"));
+            // 2. Tenta Daniel (iOS)
+            if (!targetVoice) targetVoice = ptVoices.find(v => v.name.includes("Daniel"));
+            // 3. Pega qualquer PT-BR se não achar as de cima
+            if (!targetVoice) targetVoice = ptVoices[0];
+
+            if (targetVoice) {
+                u.voice = targetVoice;
+                // Ajuste de tom para parecer mais masculino se for Google
+                if(targetVoice.name.includes("Google")) u.pitch = 0.8; 
+            }
 
             u.onstart = () => { isSpeaking = true; if(isTargetVisible) videoEl.play(); };
             u.onend = () => { isSpeaking = false; videoEl.pause(); videoEl.currentTime=0; };
