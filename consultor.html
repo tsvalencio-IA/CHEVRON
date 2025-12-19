@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho V9 - EXTRAÇÃO TOTAL</title>
+    <title>thIAguinho V10 - VARREDURA NUCLEAR</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -20,7 +20,7 @@
         /* 1. BARRA DE DIAGNÓSTICO */
         #system-status {
             position: fixed; top: 0; left: 0; width: 100%; 
-            background: rgba(0,0,0,0.85); color: #facc15; 
+            background: rgba(0,0,0,0.9); color: #facc15; 
             padding: 8px; z-index: 999999; text-align: center;
             font-size: 11px; font-weight: bold; border-bottom: 2px solid #facc15;
             pointer-events: none;
@@ -83,7 +83,7 @@
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO VARREDURA DE DADOS...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO VARREDURA NUCLEAR...</div>
 
     <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
 
@@ -94,7 +94,7 @@
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Aguarde Carregamento Total..." autocomplete="off" disabled>
+                <input type="text" id="userInput" placeholder="Aguarde Carregamento..." autocomplete="off" disabled>
                 <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -133,28 +133,45 @@
         const micBtn = document.getElementById('micBtn');
         const overlay = document.getElementById('scan-overlay');
 
-        // --- FUNÇÃO DE EXTRAÇÃO PROFUNDA (RESOLVE O PROBLEMA DAS 893 PEÇAS) ---
-        function extractAllParts(node) {
-            let extracted = new Map(); // Usa Map para evitar duplicatas pelo código
+        // --- FUNÇÃO NUCLEAR DE EXTRAÇÃO (V10) ---
+        // Esta função entra em CADA buraco do JSON e tira tudo o que parece peça
+        function nuclearExtract(node) {
+            let extractedMap = new Map(); // Mapa para garantir unicidade pelo código
 
-            function scan(obj) {
-                if (!obj || typeof obj !== 'object') return;
+            function traverse(item) {
+                if (!item) return;
 
-                // Se o objeto for uma peça válida (tem codigo e descricao)
-                if (obj.codigo && obj.descricao) {
-                    const cleanCode = String(obj.codigo).trim().toUpperCase();
-                    if (!extracted.has(cleanCode)) {
-                        extracted.set(cleanCode, obj);
+                // 1. É uma PEÇA? (Tem código e descrição)
+                // Verifica se é objeto e se tem as chaves mágicas
+                if (typeof item === 'object' && item !== null) {
+                    // Normalização para pegar chaves mesmo se tiverem caixa alta/baixa
+                    const keys = Object.keys(item).map(k => k.toLowerCase());
+                    const hasCode = keys.includes('codigo');
+                    const hasDesc = keys.includes('descricao');
+
+                    if (hasCode && hasDesc) {
+                        // ACHOU UMA PEÇA!
+                        // Usa o código como ID único para não duplicar
+                        const codeVal = String(item.codigo || item.Codigo || item.CODIGO).trim().toUpperCase();
+                        if (codeVal.length > 2 && !extractedMap.has(codeVal)) {
+                            extractedMap.set(codeVal, item);
+                        }
+                        // Nota: Não retornamos aqui pq pode haver peças aninhadas (raro, mas possível)
                     }
-                    // Não para aqui, pois pode haver aninhamento estranho
                 }
 
-                // Continua escaneando filhos (Arrays ou Objetos)
-                Object.values(obj).forEach(child => scan(child));
+                // 2. RECURSÃO (Mergulhar mais fundo)
+                if (Array.isArray(item)) {
+                    // Se for lista, varre cada item
+                    item.forEach(subItem => traverse(subItem));
+                } else if (typeof item === 'object' && item !== null) {
+                    // Se for objeto, varre cada valor
+                    Object.values(item).forEach(child => traverse(child));
+                }
             }
 
-            scan(node);
-            return Array.from(extracted.values());
+            traverse(node);
+            return Array.from(extractedMap.values());
         }
 
         // 3. CARREGAMENTO BLINDADO DE DADOS
@@ -162,8 +179,11 @@
             const data = snapshot.val();
             
             if (data) {
-                // USA A EXTRAÇÃO PROFUNDA PARA PEGAR TUDO, NÃO IMPORTA A ESTRUTURA
-                partsCatalog = extractAllParts(data);
+                // APLICA A EXTRAÇÃO NUCLEAR
+                partsCatalog = nuclearExtract(data);
+                
+                // DIAGNÓSTICO VISUAL
+                console.log("Total de peças extraídas:", partsCatalog.length);
                 checkReadiness();
             } else {
                 statusEl.innerText = "ERRO: CÉREBRO VAZIO! BANCO DE DADOS SEM PEÇAS.";
@@ -179,7 +199,7 @@
 
         function checkReadiness() {
             if (partsCatalog.length > 0) {
-                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA TOTAL: ${partsCatalog.length} PEÇAS ATIVAS`;
+                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS CARREGADAS`;
                 statusEl.className = "status-ok";
                 inputEl.disabled = false; sendBtn.disabled = false; micBtn.disabled = false;
                 inputEl.placeholder = "Pode perguntar ao thIAguinho...";
@@ -297,6 +317,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             // B. BUSCA NO CATÁLOGO (Cérebro - AGORA COM TUDO)
             const terms = searchTerm.split(" ").filter(t => t.length > 2);
             
+            // Filtro mais permissivo para achar qualquer coisa
             const candidatos = partsCatalog.filter(p => {
                 if(!p.codigo) return false;
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
