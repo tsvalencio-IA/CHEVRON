@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho - V7 INTEGRAL</title>
+    <title>thIAguinho Soluções - V8 FINAL INTEGRAL</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -14,26 +14,59 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
+        /* ESTRUTURA BASE */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; font-family: 'Roboto', sans-serif; }
         
-        /* DIAGNÓSTICO VISUAL */
+        /* 1. BARRA DE DIAGNÓSTICO (A VERDADE VISUAL) */
         #system-status {
             position: fixed; top: 0; left: 0; width: 100%; 
-            background: rgba(0,0,0,0.9); color: #facc15; 
-            padding: 10px; z-index: 999999; text-align: center;
-            font-size: 12px; font-weight: bold; border-bottom: 2px solid #facc15;
+            background: rgba(0,0,0,0.85); color: #facc15; 
+            padding: 8px; z-index: 999999; text-align: center;
+            font-size: 11px; font-weight: bold; border-bottom: 2px solid #facc15;
+            pointer-events: none;
         }
-        .status-ok { color: #4ade80 !important; }
-        .status-err { color: #f87171 !important; }
+        .status-ok { color: #4ade80 !important; border-bottom-color: #4ade80 !important; }
+        .status-err { color: #f87171 !important; border-bottom-color: #f87171 !important; }
 
-        /* UI CHAT */
+        /* 2. BOTÃO VOLTAR (RESTAURADO) */
+        #backBtn {
+            position: fixed; top: 40px; left: 15px; 
+            width: 45px; height: 45px; border-radius: 50%;
+            background: rgba(0,0,0,0.6); border: 2px solid #fff;
+            color: white; font-size: 24px; display: flex;
+            align-items: center; justify-content: center;
+            cursor: pointer; z-index: 10001;
+            transition: transform 0.2s;
+        }
+        #backBtn:active { transform: scale(0.9); }
+
+        /* 3. MIRA / SCAN OVERLAY (RESTAURADO) */
+        #scan-overlay {
+            position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+            width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
+            border: 4px solid rgba(255, 255, 255, 0.5); border-radius: 20px;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Efeito escurecer ao redor */
+            z-index: 5000; pointer-events: none;
+            display: flex; align-items: center; justify-content: center;
+        }
+        #scan-overlay::after {
+            content: "APONTE PARA O LOGO";
+            color: white; font-weight: bold; font-size: 14px;
+            margin-top: 20px; text-shadow: 0 2px 4px black;
+            position: absolute; bottom: -40px; width: 100%; text-align: center;
+        }
+        .hidden { display: none !important; }
+
+        /* 4. INTERFACE DE CHAT (UI LAYER) */
         #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
         .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
-        #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; }
+        #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; scroll-behavior: smooth; }
+        
         .msg { margin-bottom: 8px; padding: 10px 14px; border-radius: 12px; line-height: 1.4; max-width: 90%; word-wrap: break-word; }
         .msg-user { background-color: rgba(37, 99, 235, 0.9); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
         .msg-ai { background-color: rgba(22, 163, 74, 0.9); align-self: flex-start; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #4ade80; }
-        
+        .debug-info { background: #333; color: #0f0; padding: 8px; font-family: monospace; font-size: 11px; border: 1px solid #0f0; margin-top: 5px; border-radius: 4px; }
+
         .controls { display: flex; gap: 8px; align-items: center; }
         input { flex-grow: 1; padding: 14px; border-radius: 30px; border: none; outline: none; background: rgba(255, 255, 255, 0.95); font-size: 16px; color: #000; }
         input:disabled { background: #555; color: #888; }
@@ -44,14 +77,17 @@
         #sendBtn { background-color: #2563eb; }
         #sendBtn:disabled { background-color: #555; cursor: not-allowed; }
 
-        .debug-info { background: #333; color: #0f0; padding: 5px; font-family: monospace; font-size: 10px; border: 1px solid #0f0; margin-top: 5px; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
         a-scene { display: block; }
     </style>
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA COMPLETO...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA...</div>
+
+    <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
+
+    <div id="scan-overlay"></div>
 
     <div id="ui-layer">
         <div class="chat-container">
@@ -65,7 +101,9 @@
     </div>
 
     <a-scene mindar-image="imageTargetSrc: ./assets/targets.mind; uiScanning: no; filterMinCF:0.0001; filterBeta: 0.001" color-space="sRGB" renderer="colorManagement: true, physicallyCorrectLights" vr-mode-ui="enabled: false" device-orientation-permission-ui="enabled: false">
-        <a-assets><video id="mascoteVideo" src="./assets/mascote.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline muted></video></a-assets>
+        <a-assets>
+            <video id="mascoteVideo" src="./assets/mascote.mp4" preload="auto" loop="true" crossorigin="anonymous" playsinline webkit-playsinline muted></video>
+        </a-assets>
         <a-camera position="0 0 0" look-controls="enabled: false"></a-camera>
         <a-entity mindar-image-target="targetIndex: 0" id="target-entity">
             <a-plane src="#mascoteVideo" position="0 0 0" height="1.3" width="0.8" rotation="0 0 0" material="shader: flat; alphaTest: 0.5; transparent: true"></a-plane>
@@ -73,7 +111,7 @@
     </a-scene>
 
     <script>
-        // 1. FIREBASE CONFIG
+        // 1. CONFIGURAÇÃO FIREBASE (PRODUÇÃO)
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -86,35 +124,38 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
+        // 2. VARIÁVEIS DE ESTADO
         let partsCatalog = [];
         let workshopData = [];
         const statusEl = document.getElementById('system-status');
         const inputEl = document.getElementById('userInput');
         const sendBtn = document.getElementById('sendBtn');
         const micBtn = document.getElementById('micBtn');
+        const overlay = document.getElementById('scan-overlay');
 
-        // 2. CARREGAMENTO (UNIVERSAL + MEMÓRIA)
+        // 3. CARREGAMENTO BLINDADO DE DADOS (Compatível com o seu JSON exportado)
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
+            
             if (data) {
-                // LÓGICA DE CORREÇÃO DE ESTRUTURA (V6)
+                // ANÁLISE DE ESTRUTURA DO DADO RECEBIDO
                 if (Array.isArray(data)) {
+                    // Se já for uma lista [{}, {}]
                     partsCatalog = data;
                 } else if (typeof data === 'object') {
-                    if (data.pecas && Array.isArray(data.pecas)) {
-                        partsCatalog = data.pecas;
-                    } else {
-                        partsCatalog = Object.values(data);
-                    }
+                    // SE FOR UM DICIONÁRIO {"DS_001": {}, "DS_002": {}} (O CASO DO SEU ARQUIVO)
+                    // Object.values transforma isso em uma lista [{}, {}] ignorando as chaves DS_XXX
+                    partsCatalog = Object.values(data);
                 }
+                
                 checkReadiness();
             } else {
-                statusEl.innerText = "ERRO: CÉREBRO VAZIO! FAÇA O UPLOAD.";
+                statusEl.innerText = "ERRO: CÉREBRO VAZIO! BANCO DE DADOS SEM PEÇAS.";
                 statusEl.className = "status-err";
             }
         });
 
-        // MEMÓRIA DE HISTÓRICO (RESTAURADA DO V5)
+        // Carrega Histórico de Serviços (Memória do Veículo)
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) workshopData = Object.values(data);
@@ -122,20 +163,20 @@
 
         function checkReadiness() {
             if (partsCatalog.length > 0) {
-                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS + MEMÓRIA ATIVA`;
+                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA OPERACIONAL: ${partsCatalog.length} PEÇAS CARREGADAS`;
                 statusEl.className = "status-ok";
                 inputEl.disabled = false; sendBtn.disabled = false; micBtn.disabled = false;
-                inputEl.placeholder = "Pode perguntar...";
+                inputEl.placeholder = "Qual a dúvida técnica ou peça?";
             }
         }
 
-        // 3. IA CONFIG
+        // 4. CONFIGURAÇÃO DA IA (GEMINI)
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
         const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
         let chatHistory = [];
         
-        // --- PROMPT MESTRE (RESTAURADO INTEGRALMENTE) ---
+        // --- PROMPT MESTRE: SR. AUTOMÓVEL (INTEGRAL) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -182,6 +223,11 @@ Siga esta hierarquia rigorosa ao recomendar peças:
 
 *REGRA DE OURO:* Sempre mande conferir o CÓDIGO GRAVADO na peça velha antes de pedir. Catálogos erram.
 
+--- ALGORITMO DE DIAGNÓSTICO (ZERO ALUCINAÇÃO) ---
+1. PATTERN FAILURE (VÍCIOS): O carro tem defeito crônico disso? (Ex: Trocador de calor Compass, Correia Onix, Powershift Ford).
+2. LÓGICA: O que causa o sintoma? (Ar, Combustível, Centelha, Compressão, Sincronismo).
+3. TESTE: Qual o teste irrefutável? (Transdutor de vácuo, Compressão relativa, Queda de tensão).
+
 --- INSTRUÇÃO ESPECIAL DE DADOS ---
 Você terá acesso a dois blocos de informação REAL injetados a cada pergunta:
 1. [HISTÓRICO DO VEÍCULO]: O que já foi feito neste carro na nossa oficina. Use para checar GARANTIA e REINCIDÊNCIA.
@@ -192,30 +238,31 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
         chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
         chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema Operacional da Oficina (SR AUTOMÓVEL) carregado com sucesso." }] });
 
-        // 4. LÓGICA DE PERGUNTA COMPLETA
+        // 5. MOTOR DE INTELIGÊNCIA (Busca + IA)
         async function askGemini(text) {
             if(!text.trim()) return;
             
-            // MODO DEBUG DIRETO
+            // --- MODO PERITO (Busca Direta por Código) ---
+            // Se o usuário digitar "3008" ou "DS 3008", mostra o dado cru.
             if (/^\d+$/.test(text) || /^DS\s*\d+$/i.test(text)) {
                 const codeSearch = text.toUpperCase().replace("DS", "").trim();
                 const found = partsCatalog.find(p => p.codigo && p.codigo.includes(codeSearch));
                 addMessage("Você", text, "msg-user");
                 if (found) {
-                    addMessage("SISTEMA", `<div class="debug-info">CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
-                    speak(`Peça ${found.codigo} encontrada: ${found.descricao}.`);
+                    addMessage("SISTEMA", `<div class="debug-info"><strong>DADO BRUTO ENCONTRADO:</strong><br>CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
+                    speak(`Peça ${found.codigo} localizada: ${found.descricao}.`);
                 } else {
-                    addMessage("SISTEMA", `Código ${codeSearch} não encontrado.`, "msg-ai status-err");
-                    speak("Código não encontrado.");
+                    addMessage("SISTEMA", `O código ${codeSearch} não existe no arquivo carregado.`, "msg-ai status-err");
+                    speak("Código não encontrado na base de dados.");
                 }
                 inputEl.value = ""; return;
             }
 
             addMessage("Você", text, "msg-user");
             inputEl.value = "";
-            const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
+            const loadingMsg = addMessage("thIAguinho", "Analisando dados...", "msg-ai");
 
-            // A. BUSCA NO HISTÓRICO (RESTAURADA)
+            // A. BUSCA NO HISTÓRICO (Memória)
             const searchTerm = text.toUpperCase();
             const allRecords = workshopData.filter(car => 
                 (car.placa && searchTerm.includes(car.placa.toUpperCase())) || 
@@ -229,27 +276,29 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                     const logs = os.logs ? Object.values(os.logs).map(l => `- [${l.user}] ${l.description} (${l.parts||''})`).join('\n') : "Sem detalhes";
                     return `OS ${i+1} (${new Date(os.createdAt).toLocaleDateString()}): ${os.status}\n${logs}`;
                 }).join('\n---\n');
-                contextInjection += `[HISTÓRICO REAL DO VEÍCULO NA OFICINA]\n${dossie}\n\n`;
+                contextInjection += `[HISTÓRICO REAL DO VEÍCULO]\n${dossie}\n\n`;
             }
 
-            // B. BUSCA NO CATÁLOGO (INTELIGENTE)
+            // B. BUSCA NO CATÁLOGO (Cérebro)
             const terms = searchTerm.split(" ").filter(t => t.length > 2);
+            
+            // Filtro Robusto: Busca código, descrição OU palavras-chave na aplicação
             const candidatos = partsCatalog.filter(p => {
                 if(!p.codigo) return false;
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
                 return fullText.includes(searchTerm) || terms.every(term => fullText.includes(term));
-            }).slice(0, 10);
+            }).slice(0, 8); // Top 8 resultados
 
             if (candidatos.length > 0) {
-                contextInjection += `[OPÇÕES DO CATÁLOGO DS DISPONÍVEIS]\n`;
+                contextInjection += `[DADOS OFICIAIS DO CATÁLOGO DS]\n`;
                 candidatos.forEach(c => {
-                    contextInjection += `>> CÓD: ${c.codigo} | ${c.descricao} | APLICAÇÃO: ${c.aplicacao}\n`;
+                    contextInjection += `>> PEÇA: ${c.codigo} | TIPO: ${c.descricao} | APLICAÇÃO: ${c.aplicacao}\n`;
                 });
             } else {
-                contextInjection += `[CATÁLOGO] Nenhuma peça específica encontrada para: "${text}" no banco de dados.\n`;
+                contextInjection += `[CATÁLOGO] Nenhuma peça encontrada para "${text}".\n`;
             }
 
-            const prompt = `${contextInjection}\n\nPERGUNTA DO USUÁRIO: ${text}`;
+            const prompt = `${contextInjection}\n\nPERGUNTA: ${text}`;
             chatHistory.push({ role: "user", parts: [{ text: prompt }] });
 
             try {
@@ -264,7 +313,8 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 addMessage("thIAguinho", aiText, "msg-ai");
                 speak(aiText);
             } catch (error) {
-                loadingMsg.innerText = "Erro ao conectar.";
+                loadingMsg.innerText = "Erro de conexão.";
+                console.error(error);
             }
         }
 
@@ -273,10 +323,13 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             div.className = `msg ${className}`;
             div.innerHTML = `<strong>${sender}:</strong><br>${text}`;
             document.getElementById('chat-display').appendChild(div);
+            // Auto scroll
+            const display = document.getElementById('chat-display');
+            display.scrollTop = display.scrollHeight;
             return div;
         }
 
-        // --- VOZ MASCULINA FORÇADA (V6) ---
+        // 6. VOZ E AR (MIRA E SÍNTESE)
         const videoEl = document.querySelector('#mascoteVideo');
         const targetEntity = document.querySelector('#target-entity');
         let isSpeaking = false; let isTargetVisible = false;
@@ -287,6 +340,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             u.lang = 'pt-BR';
             u.rate = 1.1;
 
+            // Lógica de Voz Masculina
             const voices = window.speechSynthesis.getVoices();
             const maleVoice = voices.find(v => 
                 (v.lang.includes('pt') || v.lang.includes('BR')) && 
@@ -298,7 +352,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 u.voice = maleVoice;
                 u.pitch = 0.9; 
             } else {
-                u.pitch = 0.6; // Fallback grave
+                u.pitch = 0.6; // Força tom grave se só tiver voz feminina
             }
 
             u.onstart = () => { isSpeaking = true; if(isTargetVisible) videoEl.play(); };
@@ -306,9 +360,19 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             window.speechSynthesis.speak(u);
         }
 
-        targetEntity.addEventListener("targetFound", () => { isTargetVisible = true; if(isSpeaking) videoEl.play(); });
-        targetEntity.addEventListener("targetLost", () => { isTargetVisible = false; videoEl.pause(); });
+        // Controle da Mira (Overlay)
+        targetEntity.addEventListener("targetFound", () => { 
+            isTargetVisible = true; 
+            overlay.classList.add('hidden'); // Esconde a mira
+            if(isSpeaking) videoEl.play(); 
+        });
+        targetEntity.addEventListener("targetLost", () => { 
+            isTargetVisible = false; 
+            overlay.classList.remove('hidden'); // Mostra a mira
+            videoEl.pause(); 
+        });
 
+        // Microfone
         if (window.webkitSpeechRecognition) {
             const r = new webkitSpeechRecognition(); r.lang = 'pt-BR';
             micBtn.addEventListener('click', () => { if(micBtn.classList.contains('listening')) { r.stop(); micBtn.classList.remove('listening'); } else { r.start(); micBtn.classList.add('listening'); inputEl.placeholder="Ouvindo..."; } });
