@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho V18 - CÉREBRO CONTEXTUAL</title>
+    <title>thIAguinho V20 - O MONOLITO DEFINITIVO</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -14,9 +14,10 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
-        /* 2. ESTILOS VISUAIS COMPLETOS */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; font-family: 'Roboto', sans-serif; }
+        /* 2. ESTILOS VISUAIS COMPLETOS (NADA REMOVIDO) */
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: #111 !important; font-family: 'Roboto', sans-serif; }
         
+        /* BARRA DE STATUS (DIAGNÓSTICO) */
         #system-status {
             position: fixed; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.95); color: #facc15; 
@@ -27,6 +28,7 @@
         .status-ok { color: #4ade80 !important; border-bottom-color: #4ade80 !important; }
         .status-err { color: #f87171 !important; border-bottom-color: #f87171 !important; }
 
+        /* BOTÃO VOLTAR (RESTAURADO) */
         #backBtn {
             position: fixed; top: 50px; left: 15px; 
             width: 45px; height: 45px; border-radius: 50%;
@@ -38,6 +40,7 @@
         }
         #backBtn:active { transform: scale(0.9); }
 
+        /* MIRA / SCAN OVERLAY */
         #scan-overlay {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
@@ -55,6 +58,7 @@
         }
         .hidden { opacity: 0; pointer-events: none; }
 
+        /* UI DE CHAT */
         #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
         .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
         #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; scroll-behavior: smooth; }
@@ -62,7 +66,9 @@
         .msg { margin-bottom: 8px; padding: 10px 14px; border-radius: 12px; line-height: 1.4; max-width: 90%; word-wrap: break-word; }
         .msg-user { background-color: rgba(37, 99, 235, 0.9); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
         .msg-ai { background-color: rgba(22, 163, 74, 0.9); align-self: flex-start; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #4ade80; }
-        .debug-info { background: #333; color: #0f0; padding: 8px; font-family: monospace; font-size: 11px; border: 1px solid #0f0; margin-top: 5px; border-radius: 4px; }
+        
+        /* DESTAQUE VISUAL PARA PEÇAS */
+        .peca-card { background: #333; border: 1px solid #facc15; padding: 8px; margin-top: 5px; border-radius: 6px; font-family: monospace; font-size: 11px; color: #facc15; display: block; }
 
         .controls { display: flex; gap: 8px; align-items: center; }
         input { flex-grow: 1; padding: 14px; border-radius: 30px; border: none; outline: none; background: rgba(255, 255, 255, 0.95); font-size: 16px; color: #000; }
@@ -77,7 +83,7 @@
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> ATIVANDO INTELIGÊNCIA V18...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA MONOLITO...</div>
     <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
     <div id="scan-overlay"></div>
 
@@ -86,7 +92,7 @@
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Carregando Base..." autocomplete="off" disabled>
+                <input type="text" id="userInput" placeholder="Carregando Base Completa..." autocomplete="off" disabled>
                 <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -123,12 +129,16 @@
         const micBtn = document.getElementById('micBtn');
         const overlay = document.getElementById('scan-overlay');
 
-        // 6. CARREGAMENTO (UNIVERSAL)
+        // 6. CARREGAMENTO (UNIVERSAL - LISTA OU OBJETO)
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                if (Array.isArray(data)) partsCatalog = data;
-                else if (typeof data === 'object') partsCatalog = Object.values(data);
+                // LÓGICA V11: Se é Lista, aceita. Se é Objeto, converte.
+                if (Array.isArray(data)) {
+                    partsCatalog = data;
+                } else if (typeof data === 'object') {
+                    partsCatalog = Object.values(data);
+                }
 
                 if (partsCatalog.length > 893) {
                     statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS ATIVAS`;
@@ -163,7 +173,7 @@
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
         let chatHistory = [];
         
-        // --- PROMPT MESTRE: INTEIRO (COMPLETO) ---
+        // --- PROMPT MESTRE: A ALMA RESTAURADA (V14/V17) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -221,17 +231,18 @@ Você terá acesso a dois blocos de informação REAL injetados a cada pergunta:
 SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
 `;
         chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
-        chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema V18 (Contextual) Ativo." }] });
+        chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema Monolito Ativo. Alma Restaurada." }] });
 
-        // 8. FUNÇÃO EXTRAÇÃO
+        // 8. FUNÇÕES AUXILIARES (NORMALIZAÇÃO)
         function extractNumber(code) { return String(code).replace(/[^0-9]/g, ""); }
+        function removeAccents(str) { return str.normalize("NFD").replace(/[\u0300-\u036f]/g, ""); }
 
-        // 9. CÉREBRO V18 (LÓGICA HÍBRIDA)
+        // 9. CÉREBRO V20 (LÓGICA HÍBRIDA + CORREÇÃO FIESTA)
         async function askGemini(text) {
             if(!text.trim()) return;
             
-            // 1. TENTATIVA SNIPER (EXTRAÇÃO DE CÓDIGO)
-            // Procura número >= 4 dígitos. Mas agora, se não achar, ELE NÃO PARA.
+            // A. TENTATIVA SNIPER (CÓDIGO EXATO)
+            // Procura número >= 4 dígitos. 
             const numberMatch = text.match(/\d{4,}/); 
             let directMatchFound = false;
 
@@ -245,45 +256,57 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                     const prompt = `${fichaTecnica}\n\nPERGUNTA: ${text}\nINSTRUÇÃO: Responda baseando-se APENAS na peça acima.`;
                     callAI(prompt, `Localizei o código ${found.codigo}.`);
                     inputEl.value = "";
-                    return; // SUCESSO ABSOLUTO, ENCERRA AQUI.
+                    return; // SUCESSO ABSOLUTO
                 }
-                // SE NÃO ACHOU: Pode ser um ano (ex: 2016). NÃO PARE! CONTINUE PARA A BUSCA DE TEXTO.
+                // SE NÃO ACHOU (ex: 2016 do Fiesta): NÃO PARE! O CÓDIGO V20 CONTINUA.
             }
 
-            // 2. BUSCA SEMÂNTICA (TEXTO)
+            // B. BUSCA SEMÂNTICA (INTELIGENTE)
             if (!document.querySelector('.msg-user:last-child') || document.querySelector('.msg-user:last-child').innerText.indexOf(text) === -1) {
                  addMessage("Você", text, "msg-user");
             }
             inputEl.value = "";
 
-            // Limpeza Inteligente de Palavras (Stop Words)
-            const stopWords = ["de", "do", "da", "o", "a", "os", "as", "para", "com", "em", "um", "uma", "tem", "algum", "qual", "codigo", "marca"];
-            const cleanTerms = text.toUpperCase().split(" ").filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
+            // Limpeza de Stop Words e Acentos
+            const stopWords = ["de", "do", "da", "o", "a", "os", "as", "para", "com", "em", "um", "uma", "tem", "algum", "qual", "codigo", "veja", "catalogo", "ds", "marca"];
+            const cleanTerms = removeAccents(text).toUpperCase().split(" ").filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
 
-            // BUSCA COM PONTUAÇÃO (RANKING) - Para aceitar correspondência parcial
+            // BUSCA COM PONTUAÇÃO (RANKING)
             const candidatos = partsCatalog.map(p => {
                 if(!p.codigo) return null;
-                const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
+                const fullText = removeAccents(p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
                 let score = 0;
                 cleanTerms.forEach(term => {
                     if (fullText.includes(term)) score++;
                 });
                 return { piece: p, score: score };
             })
-            .filter(item => item && item.score >= 2) // Pelo menos 2 palavras tem que bater (ex: "Sensor" e "Nivel")
-            .sort((a, b) => b.score - a.score) // Ordena pelos mais relevantes
+            .filter(item => item && item.score >= 1) // Pelo menos 1 match relevante
+            .sort((a, b) => b.score - a.score) 
             .slice(0, 10)
             .map(item => item.piece);
 
             // Monta contexto
             let contextInjection = "";
             if (candidatos.length > 0) {
-                contextInjection += `[MELHORES RESULTADOS DO CATÁLOGO]\n`;
+                contextInjection += `[CATALOG RESULTS - PEÇAS ENCONTRADAS]\n`;
                 candidatos.forEach(c => {
-                    contextInjection += `>> CÓD: ${c.codigo} | ${c.descricao} | APP: ${c.aplicacao.substring(0, 120)}...\n`;
+                    contextInjection += `* CÓD: ${c.codigo} | DESC: ${c.descricao} | APP: ${c.aplicacao.substring(0, 150)}...\n`;
                 });
             } else {
-                contextInjection += `[CATÁLOGO] Nenhuma peça encontrada combinando os termos: ${cleanTerms.join(", ")}.\n`;
+                contextInjection += `[CATALOG RESULTS] Nenhuma peça encontrada combinando os termos: ${cleanTerms.join(", ")}.\n`;
+            }
+
+            // Histórico do Veículo (Se houver placa na pergunta ou contexto)
+            const searchTerm = text.toUpperCase();
+            const allRecords = workshopData.filter(car => 
+                (car.placa && searchTerm.includes(car.placa.toUpperCase())) || 
+                (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
+            ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+
+            if (allRecords.length > 0) {
+                let dossie = allRecords.map((os, i) => `OS ${i+1}: ${os.status}`).join('\n');
+                contextInjection += `\n[HISTÓRICO DO VEÍCULO]\n${dossie}\n`;
             }
 
             const prompt = `${contextInjection}\n\nPERGUNTA: ${text}`;
@@ -306,13 +329,19 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 addMessage("thIAguinho", aiText, "msg-ai");
                 speak(speakOverride || aiText);
             } catch (error) {
-                loadingMsg.innerText = "Erro ao conectar.";
+                loadingMsg.innerText = "Erro.";
             }
         }
 
         function addMessage(sender, text, className) {
             const div = document.createElement('div');
             div.className = `msg ${className}`;
+            
+            // Formatação bonita para listas de peças
+            if (className.includes('msg-ai') && text.includes('CÓD:')) {
+                text = text.replace(/\* CÓD:/g, '<div class="peca-card">CÓD:').replace(/\.\.\./g, '...</div>');
+            }
+            
             div.innerHTML = `<strong>${sender}:</strong><br>${text}`;
             document.getElementById('chat-display').appendChild(div);
             const display = document.getElementById('chat-display');
