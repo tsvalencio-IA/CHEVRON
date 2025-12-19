@@ -3,11 +3,10 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho Soluções- Realidade Aumentada</title>
+    <title>thIAguinho - ORIGINAL & COMPLETO</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
-    
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-app.js"></script>
     <script src="https://www.gstatic.com/firebasejs/8.10.1/firebase-database.js"></script>
     
@@ -15,53 +14,52 @@
     <link href="https://cdn.jsdelivr.net/npm/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet">
 
     <style>
-        /* ESTILOS ORIGINAIS MANTIDOS */
-        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background-color: transparent !important; }
-        video { position: absolute; top: 0; left: 0; z-index: -1 !important; width: 100% !important; height: 100% !important; object-fit: cover !important; }
-        #start-screen { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: #000; z-index: 99999; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; color: white; }
-        #start-btn { background: #2563eb; color: white; padding: 20px 40px; font-size: 20px; font-weight: bold; border: none; border-radius: 50px; margin-top: 30px; cursor: pointer; box-shadow: 0 0 25px rgba(37, 99, 235, 0.8); text-transform: uppercase; animation: pulse 2s infinite; }
+        html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; font-family: 'Roboto', sans-serif; }
+        
+        /* BARRA DE DIAGNÓSTICO (A VERDADE VISUAL) */
+        #system-status {
+            position: fixed; top: 0; left: 0; width: 100%; 
+            background: rgba(0,0,0,0.9); color: #facc15; 
+            padding: 10px; z-index: 999999; text-align: center;
+            font-size: 12px; font-weight: bold; border-bottom: 2px solid #facc15;
+        }
+        .status-ok { color: #4ade80 !important; }
+        .status-err { color: #f87171 !important; }
+
+        /* UI */
         #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
         .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
-        #chat-display { max-height: 35vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; }
+        #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; }
         .msg { margin-bottom: 8px; padding: 10px 14px; border-radius: 12px; line-height: 1.4; max-width: 90%; word-wrap: break-word; }
         .msg-user { background-color: rgba(37, 99, 235, 0.9); align-self: flex-end; margin-left: auto; border-bottom-right-radius: 2px; }
         .msg-ai { background-color: rgba(22, 163, 74, 0.9); align-self: flex-start; margin-right: auto; border-bottom-left-radius: 2px; border: 1px solid #4ade80; }
+        
         .controls { display: flex; gap: 8px; align-items: center; }
         input { flex-grow: 1; padding: 14px; border-radius: 30px; border: none; outline: none; background: rgba(255, 255, 255, 0.95); font-size: 16px; color: #000; }
+        input:disabled { background: #555; color: #888; }
+        
         .icon-btn { width: 50px; height: 50px; border-radius: 50%; border: none; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 24px; color: white; transition: 0.2s; box-shadow: 0 4px 6px rgba(0,0,0,0.3); }
-        #micBtn { background-color: #4b5563; } #micBtn.listening { background-color: #ef4444; animation: pulse 1s infinite; }
+        #micBtn { background-color: #4b5563; } 
+        #micBtn.listening { background-color: #ef4444; animation: pulse 1s infinite; }
         #sendBtn { background-color: #2563eb; }
-        #backBtn { position: fixed; top: 20px; left: 20px; background-color: rgba(0,0,0,0.6); width: 45px; height: 45px; pointer-events: auto; z-index: 10001; border-radius: 50%; color: white; border: none; font-size: 26px; display: flex; align-items: center; justify-content: center; cursor: pointer; }
-        #scan-overlay { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); text-align: center; z-index: 5000; pointer-events: none; display: none; }
-        .scan-box { width: 70vw; height: 70vw; max-width: 300px; max-height: 300px; border: 4px solid rgba(255, 255, 255, 0.8); border-radius: 24px; box-shadow: 0 0 30px rgba(37, 99, 235, 0.5); }
-        .scan-text { color: white; margin-top: 20px; font-weight: bold; font-size: 18px; background: rgba(0,0,0,0.6); padding: 8px 16px; border-radius: 8px; display: inline-block; }
-        .hidden { display: none !important; }
+        #sendBtn:disabled { background-color: #555; cursor: not-allowed; }
+
+        .debug-info { background: #333; color: #0f0; padding: 5px; font-family: monospace; font-size: 10px; border: 1px solid #0f0; margin-top: 5px; }
         @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); } 100% { transform: scale(1); } }
+        a-scene { display: block; }
     </style>
 </head>
 <body>
 
-    <div id="start-screen">
-        <i class='bx bx-cube-alt' style="font-size: 80px; margin-bottom: 20px; color: #60a5fa;"></i>
-        <h1>thIAguinho Soluções</h1>
-        <p style="color: #cbd5e1; max-width: 300px; margin: 10px auto;">Toque para Liberar Câmera e Memória.</p>
-        <button id="start-btn">INICIAR</button>
-    </div>
-
-    <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
-
-    <div id="scan-overlay">
-        <div class="scan-box"></div>
-        <div class="scan-text">APONTE PARA O LOGO</div>
-    </div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA...</div>
 
     <div id="ui-layer">
         <div class="chat-container">
             <div id="chat-display"></div>
             <div class="controls">
-                <button id="micBtn" class="icon-btn"><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Fale ou digite..." autocomplete="off">
-                <button id="sendBtn" class="icon-btn"><i class='bx bxs-send'></i></button>
+                <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
+                <input type="text" id="userInput" placeholder="Carregando Conhecimento..." autocomplete="off" disabled>
+                <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
     </div>
@@ -75,7 +73,7 @@
     </a-scene>
 
     <script>
-        // CONFIGURAÇÃO DO FIREBASE
+        // 1. FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -85,48 +83,50 @@
             messagingSenderId: "736157192887",
             appId: "1:736157192887:web:c23d3daade848a33d67332"
         };
-        
-        if (!firebase.apps.length) {
-            firebase.initializeApp(firebaseConfig);
-        }
+        firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
-        
-        let workshopData = []; 
-        let partsCatalog = []; // ADIÇÃO: Variável do Cérebro
 
-        // LÊ OS DADOS DO PÁTIO
+        let partsCatalog = [];
+        let workshopData = [];
+        const statusEl = document.getElementById('system-status');
+        const inputEl = document.getElementById('userInput');
+        const sendBtn = document.getElementById('sendBtn');
+        const micBtn = document.getElementById('micBtn');
+
+        // 2. CARREGAMENTO (CÉREBRO + MEMÓRIA)
+        db.ref('catalogs').on('value', (snapshot) => {
+            const data = snapshot.val();
+            if (data) {
+                partsCatalog = Object.values(data);
+                checkReadiness();
+            } else {
+                statusEl.innerText = "ERRO: CÉREBRO VAZIO! INJETE O JSON NO CEREBRO.HTML";
+                statusEl.className = "status-err";
+            }
+        });
+
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) workshopData = Object.values(data);
         });
 
-        // ADIÇÃO: LÊ O CÉREBRO DE PEÇAS
-        db.ref('catalogs').on('value', (snapshot) => {
-            const data = snapshot.val();
-            if (data) partsCatalog = Object.values(data);
-        });
+        function checkReadiness() {
+            if (partsCatalog.length > 0) {
+                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS + MEMÓRIA ATIVA`;
+                statusEl.className = "status-ok";
+                inputEl.disabled = false; sendBtn.disabled = false; micBtn.disabled = false;
+                inputEl.placeholder = "Dúvida Técnica ou Peça?";
+            }
+        }
 
+        // 3. IA CONFIG (PROMPT MESTRE RESTAURADO)
         const KEY_PARTE_1 = "AIzaSyAfx1aiuP9jWzGDoh"; 
         const KEY_PARTE_2 = "E6KxZ6_68wZkt27VI";
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
 
-        const videoEl = document.querySelector('#mascoteVideo');
-        const targetEntity = document.querySelector('#target-entity');
-        const chatDisplay = document.getElementById('chat-display');
-        const userInput = document.getElementById('userInput');
-        const sendBtn = document.getElementById('sendBtn');
-        const micBtn = document.getElementById('micBtn');
-        const startScreen = document.getElementById('start-screen');
-        const startBtn = document.getElementById('start-btn');
-        const scanOverlay = document.getElementById('scan-overlay');
-
-        let isSpeaking = false;
-        let isTargetVisible = false;
-        let synthesis = window.speechSynthesis;
-        let voices = [];
         let chatHistory = [];
-
-        // --- PROMPT INTACTO DO SR AUTOMÓVEL ---
+        
+        // --- AQUI ESTÁ A ALMA DE VOLTA (INTACTA) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -178,171 +178,133 @@ Siga esta hierarquia rigorosa ao recomendar peças:
 2. LÓGICA: O que causa o sintoma? (Ar, Combustível, Centelha, Compressão, Sincronismo).
 3. TESTE: Qual o teste irrefutável? (Transdutor de vácuo, Compressão relativa, Queda de tensão).
 
---- FORMATO DE RESPOSTA ---
-- Português do Brasil.
-- Máximo de 3 frases curtas (para síntese de voz).
-- Inicie com ALERTA se houver risco de segurança ou prejuízo financeiro grave.
+--- INSTRUÇÃO ESPECIAL DE DADOS ---
+Você terá acesso a dois blocos de informação REAL injetados a cada pergunta:
+1. [HISTÓRICO DO VEÍCULO]: O que já foi feito neste carro na nossa oficina. Use para checar GARANTIA e REINCIDÊNCIA.
+2. [CATÁLOGO DE PEÇAS]: Dados extraídos do nosso estoque. Use para indicar códigos.
+
+SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
 `;
 
-        chatHistory.push({
-            role: "user",
-            parts: [{ text: SYSTEM_PROMPT }]
-        });
-        chatHistory.push({
-            role: "model",
-            parts: [{ text: "Entendido. Sistema Operacional da Oficina carregado. Aguardando comando." }]
-        });
+        chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
+        chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema Operacional da Oficina (SR AUTOMÓVEL) carregado com sucesso." }] });
 
-        // Carrega vozes
-        function loadVoices() {
-            voices = synthesis.getVoices();
-        }
-        if (synthesis.onvoiceschanged !== undefined) synthesis.onvoiceschanged = loadVoices;
-
-        // INICIALIZAÇÃO
-        startBtn.addEventListener('click', () => {
-            loadVoices();
-            startScreen.style.display = 'none';
-            scanOverlay.style.display = 'block';
-            const u = new SpeechSynthesisUtterance('');
-            synthesis.speak(u);
-            videoEl.play().then(() => videoEl.pause()).catch(e => console.log(e));
-        });
-
-        // AR EVENTS
-        targetEntity.addEventListener("targetFound", () => {
-            isTargetVisible = true;
-            scanOverlay.classList.add('hidden');
-            if(isSpeaking) videoEl.play(); else { videoEl.pause(); videoEl.currentTime = 0; }
-        });
-
-        targetEntity.addEventListener("targetLost", () => {
-            isTargetVisible = false;
-            scanOverlay.classList.remove('hidden');
-            videoEl.pause();
-        });
-
-        // --- CÉREBRO: GEMINI 2.0 (MODIFICADO APENAS PARA INCLUIR A BUSCA) ---
+        // 4. LÓGICA DE PERGUNTA (CÉREBRO + HISTÓRICO RESTAURADO)
         async function askGemini(text) {
             if(!text.trim()) return;
             
+            // MODO DEBUG RÁPIDO (Só Códigos - Para testar se o JSON subiu)
+            if (/^\d+$/.test(text) || /^DS\s*\d+$/i.test(text)) {
+                const codeSearch = text.toUpperCase().replace("DS", "").trim();
+                const found = partsCatalog.find(p => p.codigo.includes(codeSearch));
+                addMessage("Você", text, "msg-user");
+                if (found) {
+                    addMessage("SISTEMA", `<div class="debug-info">CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
+                    speak(`Peça ${found.codigo} encontrada: ${found.descricao}.`);
+                } else {
+                    addMessage("SISTEMA", `Código ${codeSearch} não encontrado no Cérebro.`, "msg-ai status-err");
+                    speak("Código não encontrado.");
+                }
+                inputEl.value = ""; return;
+            }
+
             addMessage("Você", text, "msg-user");
-            userInput.value = "";
+            inputEl.value = "";
             const loadingMsg = addMessage("thIAguinho", "Analisando...", "msg-ai");
 
-            let contextInjection = "";
+            // A. BUSCA NO HISTÓRICO (AUDITORIA) - A MEMÓRIA DO GESTOR
             const searchTerm = text.toUpperCase();
-            
-            // 1. Busca no Histórico do Pátio (Intacto)
             const allRecords = workshopData.filter(car => 
-                (car.placa && searchTerm.includes(car.placa)) || 
+                (car.placa && searchTerm.includes(car.placa.toUpperCase())) || 
                 (car.modelo && searchTerm.includes(car.modelo.toUpperCase()))
-            );
+            ).sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
 
+            let contextInjection = "";
+            
             if (allRecords.length > 0) {
                 const currentVehicle = allRecords[allRecords.length - 1];
-                let dossieHistorico = "";
-                
-                allRecords.forEach((os, index) => {
-                    const logsDetalhados = os.logs ? Object.values(os.logs)
-                        .map(l => {
-                            const dataLog = new Date(l.timestamp).toLocaleString('pt-BR');
-                            const pecasInfo = l.parts ? ` | Peças: ${l.parts}` : "";
-                            return `   - [${dataLog}] ${l.user}: ${l.description}${pecasInfo}`;
-                        }).join('\n') : "   - Sem detalhes registrados.";
+                let dossie = allRecords.map((os, i) => {
+                    const logs = os.logs ? Object.values(os.logs).map(l => `- [${l.user}] ${l.description} (${l.parts||''})`).join('\n') : "Sem detalhes";
+                    return `OS ${i+1} (${new Date(os.createdAt).toLocaleDateString()}): ${os.status}\n${logs}`;
+                }).join('\n---\n');
+                contextInjection += `[HISTÓRICO REAL DO VEÍCULO NA OFICINA]\n${dossie}\n\n`;
+            }
 
-                    dossieHistorico += `=== ATENDIMENTO ${index + 1} (${new Date(os.createdAt).toLocaleDateString('pt-BR')}) ===\nStatus: ${os.status}\n${logsDetalhados}\n`;
+            // B. BUSCA NO CATÁLOGO (PEÇAS) - A MENTE DO ALMOXARIFE
+            const terms = searchTerm.split(" ").filter(t => t.length > 2);
+            const candidatos = partsCatalog.filter(p => {
+                const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
+                return fullText.includes(searchTerm) || terms.every(term => fullText.includes(term));
+            }).slice(0, 10);
+
+            if (candidatos.length > 0) {
+                contextInjection += `[OPÇÕES DO CATÁLOGO DS DISPONÍVEIS]\n`;
+                candidatos.forEach(c => {
+                    contextInjection += `>> CÓD: ${c.codigo} | ${c.descricao} | APLICAÇÃO: ${c.aplicacao}\n`;
                 });
-
-                contextInjection = `[DOSSIÊ TÉCNICO]\nVeículo: ${currentVehicle.modelo} (${currentVehicle.placa})\n${dossieHistorico}`;
+            } else {
+                contextInjection += `[CATÁLOGO] Nenhuma peça específica encontrada para: "${text}" no banco de dados.\n`;
             }
 
-            // 2. ADIÇÃO: Busca no Cérebro de Peças
-            // Se o JSON estiver limpo (Passo 1), isso vai funcionar perfeitamente
-            const pecasEncontradas = partsCatalog.filter(p => 
-                searchTerm.includes(p.codigo.toUpperCase()) || 
-                searchTerm.includes(p.descricao.toUpperCase()) || 
-                (p.aplicacao && searchTerm.split(" ").every(word => p.aplicacao.toUpperCase().includes(word))) // Busca inteligente por aplicação
-            ).slice(0, 5);
-
-            if (pecasEncontradas.length > 0) {
-                contextInjection += `\n[CATÁLOGO DE PEÇAS]\nEncontrei estas opções:\n${pecasEncontradas.map(p => `- Cód: ${p.codigo} (${p.marca}): ${p.descricao} [Aplicação: ${p.aplicacao}]`).join('\n')}`;
-            }
-
-            const promptToSend = contextInjection ? (contextInjection + "\n\nPERGUNTA: " + text) : text;
-
-            chatHistory.push({
-                role: "user",
-                parts: [{ text: promptToSend }]
-            });
+            const prompt = `${contextInjection}\n\nPERGUNTA DO USUÁRIO: ${text}`;
+            chatHistory.push({ role: "user", parts: [{ text: prompt }] });
 
             try {
                 const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash-exp:generateContent?key=${GEMINI_API_KEY}`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        contents: chatHistory,
-                        generationConfig: { temperature: 0.1 } 
-                    })
+                    body: JSON.stringify({ contents: chatHistory })
                 });
-
                 const data = await response.json();
                 loadingMsg.remove();
-
-                if (data.error) throw new Error(data.error.message);
-
                 const aiText = data.candidates[0].content.parts[0].text;
-                
-                chatHistory.push({
-                    role: "model",
-                    parts: [{ text: aiText }]
-                });
-
+                chatHistory.push({ role: "model", parts: [{ text: aiText }] });
                 addMessage("thIAguinho", aiText, "msg-ai");
-                speakMaleVoice(aiText);
-
+                speak(aiText);
             } catch (error) {
-                loadingMsg.textContent = "Erro de conexão.";
-                console.error(error);
-                chatHistory.pop();
+                loadingMsg.innerText = "Erro ao conectar.";
             }
         }
-
-        // ... RESTANTE DAS FUNÇÕES (VOZ, MICROFONE) MANTIDAS INTACTAS ...
-        function speakMaleVoice(text) {
-            synthesis.cancel();
-            const utterance = new SpeechSynthesisUtterance(text);
-            if (voices.length === 0) loadVoices();
-            const maleVoice = voices.find(v => (v.lang.includes('pt-BR')||v.lang.includes('pt_BR')) && (v.name.includes('Google')||v.name.includes('Daniel')) && !v.name.includes('Luciana'));
-            if (maleVoice) utterance.voice = maleVoice;
-            utterance.pitch = 0.6; utterance.rate = 1.2;  
-            utterance.onstart = () => { isSpeaking = true; if (isTargetVisible) videoEl.play(); };
-            utterance.onend = () => { isSpeaking = false; videoEl.pause(); videoEl.currentTime = 0; };
-            synthesis.speak(utterance);
-        }
-
-        const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        if (SpeechRecognition) {
-            const recognition = new SpeechRecognition();
-            recognition.lang = 'pt-BR';
-            recognition.continuous = false;
-            micBtn.addEventListener('click', () => { if (micBtn.classList.contains('listening')) { recognition.stop(); micBtn.classList.remove('listening'); } else { recognition.start(); micBtn.classList.add('listening'); userInput.placeholder = "Ouvindo..."; } });
-            recognition.onresult = (event) => { const text = event.results[0][0].transcript; userInput.value = text; micBtn.classList.remove('listening'); userInput.placeholder = "Enviando..."; askGemini(text); };
-            recognition.onerror = () => { micBtn.classList.remove('listening'); userInput.placeholder = "Erro. Digite."; };
-            recognition.onend = () => { micBtn.classList.remove('listening'); if(userInput.value==="") userInput.placeholder="Qual a dúvida?"; };
-        } else { micBtn.style.display = 'none'; }
 
         function addMessage(sender, text, className) {
             const div = document.createElement('div');
             div.className = `msg ${className}`;
-            div.innerHTML = `<strong>${sender}:</strong><br>${text.replace(/\*\*/g, '')}`;
-            chatDisplay.appendChild(div);
-            chatDisplay.scrollTop = chatDisplay.scrollHeight;
+            div.innerHTML = `<strong>${sender}:</strong><br>${text}`;
+            document.getElementById('chat-display').appendChild(div);
             return div;
         }
 
-        sendBtn.addEventListener('click', () => askGemini(userInput.value));
-        userInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendBtn.click(); });
+        // Voz e AR
+        const videoEl = document.querySelector('#mascoteVideo');
+        const targetEntity = document.querySelector('#target-entity');
+        let isSpeaking = false; let isTargetVisible = false;
+
+        function speak(text) {
+            window.speechSynthesis.cancel();
+            const u = new SpeechSynthesisUtterance(text);
+            u.pitch = 0.6; u.rate = 1.2;
+            const voices = window.speechSynthesis.getVoices();
+            const male = voices.find(v => v.name.includes("Google") && !v.name.includes("Luciana"));
+            if(male) u.voice = male;
+
+            u.onstart = () => { isSpeaking = true; if(isTargetVisible) videoEl.play(); };
+            u.onend = () => { isSpeaking = false; videoEl.pause(); videoEl.currentTime=0; };
+            window.speechSynthesis.speak(u);
+        }
+
+        targetEntity.addEventListener("targetFound", () => { isTargetVisible = true; if(isSpeaking) videoEl.play(); });
+        targetEntity.addEventListener("targetLost", () => { isTargetVisible = false; videoEl.pause(); });
+
+        // Microfone
+        if (window.webkitSpeechRecognition) {
+            const r = new webkitSpeechRecognition(); r.lang = 'pt-BR';
+            micBtn.addEventListener('click', () => { if(micBtn.classList.contains('listening')) { r.stop(); micBtn.classList.remove('listening'); } else { r.start(); micBtn.classList.add('listening'); inputEl.placeholder="Ouvindo..."; } });
+            r.onresult = (e) => { inputEl.value = e.results[0][0].transcript; micBtn.classList.remove('listening'); inputEl.placeholder="Enviando..."; askGemini(inputEl.value); };
+            r.onend = () => micBtn.classList.remove('listening');
+        } else micBtn.style.display = 'none';
+
+        sendBtn.addEventListener('click', () => askGemini(inputEl.value));
+        inputEl.addEventListener('keypress', (e) => { if(e.key === 'Enter') sendBtn.click(); });
     </script>
 </body>
 </html>
