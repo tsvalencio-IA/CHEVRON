@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho V17 - A VERSÃO FINAL (ALMA + CÉREBRO)</title>
+    <title>thIAguinho V18 - CÉREBRO CONTEXTUAL</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -77,7 +77,7 @@
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA INTEGRAL...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> ATIVANDO INTELIGÊNCIA V18...</div>
     <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
     <div id="scan-overlay"></div>
 
@@ -86,7 +86,7 @@
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Carregando Conhecimento..." autocomplete="off" disabled>
+                <input type="text" id="userInput" placeholder="Carregando Base..." autocomplete="off" disabled>
                 <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -127,12 +127,8 @@
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) {
-                // LÓGICA V11: Se é Lista, aceita. Se é Objeto, converte.
-                if (Array.isArray(data)) {
-                    partsCatalog = data;
-                } else if (typeof data === 'object') {
-                    partsCatalog = Object.values(data);
-                }
+                if (Array.isArray(data)) partsCatalog = data;
+                else if (typeof data === 'object') partsCatalog = Object.values(data);
 
                 if (partsCatalog.length > 893) {
                     statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA PRONTO: ${partsCatalog.length} PEÇAS ATIVAS`;
@@ -167,7 +163,7 @@
         const GEMINI_API_KEY = KEY_PARTE_1 + KEY_PARTE_2;
         let chatHistory = [];
         
-        // --- PROMPT MESTRE: INTEIRO (NADA REMOVIDO) ---
+        // --- PROMPT MESTRE: INTEIRO (COMPLETO) ---
         const SYSTEM_PROMPT = `
 Você é o thIAguinho, a Autoridade Técnica e Comercial Suprema da rede Bosch Car Service.
 
@@ -225,61 +221,69 @@ Você terá acesso a dois blocos de informação REAL injetados a cada pergunta:
 SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
 `;
         chatHistory.push({ role: "user", parts: [{ text: SYSTEM_PROMPT }] });
-        chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema V17 (Completo) Ativo." }] });
+        chatHistory.push({ role: "model", parts: [{ text: "Entendido. Sistema V18 (Contextual) Ativo." }] });
 
         // 8. FUNÇÃO EXTRAÇÃO
         function extractNumber(code) { return String(code).replace(/[^0-9]/g, ""); }
 
-        // 9. CÉREBRO V17 (BUSCA FLEXÍVEL)
+        // 9. CÉREBRO V18 (LÓGICA HÍBRIDA)
         async function askGemini(text) {
             if(!text.trim()) return;
             
-            // A. TENTATIVA SNIPER (EXTRAÇÃO DE CÓDIGO)
-            // Procura qualquer sequência de 4 ou mais dígitos no meio da frase
+            // 1. TENTATIVA SNIPER (EXTRAÇÃO DE CÓDIGO)
+            // Procura número >= 4 dígitos. Mas agora, se não achar, ELE NÃO PARA.
             const numberMatch = text.match(/\d{4,}/); 
-            
+            let directMatchFound = false;
+
             if (numberMatch) {
                 const searchCode = numberMatch[0];
                 const found = partsCatalog.find(p => p.codigo && extractNumber(p.codigo) === searchCode);
                 
-                addMessage("Você", text, "msg-user");
-                
                 if (found) {
+                    addMessage("Você", text, "msg-user");
                     const fichaTecnica = `[DADO CONFIRMADO]\nCÓDIGO: ${found.codigo}\nDESCRIÇÃO: ${found.descricao}\nAPLICAÇÃO: ${found.aplicacao}`;
-                    const prompt = `${fichaTecnica}\n\nPERGUNTA: ${text}\nINSTRUÇÃO: Responda baseando-se APENAS na peça acima. Se a descrição estiver suja com medidas, foque no nome da peça e aplicação.`;
+                    const prompt = `${fichaTecnica}\n\nPERGUNTA: ${text}\nINSTRUÇÃO: Responda baseando-se APENAS na peça acima.`;
                     callAI(prompt, `Localizei o código ${found.codigo}.`);
                     inputEl.value = "";
-                    return;
+                    return; // SUCESSO ABSOLUTO, ENCERRA AQUI.
                 }
+                // SE NÃO ACHOU: Pode ser um ano (ex: 2016). NÃO PARE! CONTINUE PARA A BUSCA DE TEXTO.
             }
 
-            // B. TENTATIVA BUSCA SEMÂNTICA (FILTRO INTELIGENTE)
+            // 2. BUSCA SEMÂNTICA (TEXTO)
             if (!document.querySelector('.msg-user:last-child') || document.querySelector('.msg-user:last-child').innerText.indexOf(text) === -1) {
                  addMessage("Você", text, "msg-user");
             }
             inputEl.value = "";
 
-            // Limpa palavras inúteis (Stop Words) para a busca funcionar
-            // Ex: "Sensor de Nível para o Fiesta" -> "Sensor Nível Fiesta"
-            const stopWords = ["de", "do", "da", "o", "a", "os", "as", "para", "com", "em", "um", "uma", "tem", "algum"];
+            // Limpeza Inteligente de Palavras (Stop Words)
+            const stopWords = ["de", "do", "da", "o", "a", "os", "as", "para", "com", "em", "um", "uma", "tem", "algum", "qual", "codigo", "marca"];
             const cleanTerms = text.toUpperCase().split(" ").filter(w => w.length > 2 && !stopWords.includes(w.toLowerCase()));
 
-            const candidatos = partsCatalog.filter(p => {
-                if(!p.codigo) return false;
+            // BUSCA COM PONTUAÇÃO (RANKING) - Para aceitar correspondência parcial
+            const candidatos = partsCatalog.map(p => {
+                if(!p.codigo) return null;
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
-                // Verifica se TODAS as palavras chaves (limpas) estão no texto da peça
-                return cleanTerms.every(term => fullText.includes(term));
-            }).slice(0, 10);
+                let score = 0;
+                cleanTerms.forEach(term => {
+                    if (fullText.includes(term)) score++;
+                });
+                return { piece: p, score: score };
+            })
+            .filter(item => item && item.score >= 2) // Pelo menos 2 palavras tem que bater (ex: "Sensor" e "Nivel")
+            .sort((a, b) => b.score - a.score) // Ordena pelos mais relevantes
+            .slice(0, 10)
+            .map(item => item.piece);
 
             // Monta contexto
             let contextInjection = "";
             if (candidatos.length > 0) {
-                contextInjection += `[RESULTADOS DO CATÁLOGO]\n`;
+                contextInjection += `[MELHORES RESULTADOS DO CATÁLOGO]\n`;
                 candidatos.forEach(c => {
-                    contextInjection += `>> CÓD: ${c.codigo} | ${c.descricao} | ${c.aplicacao.substring(0, 100)}...\n`;
+                    contextInjection += `>> CÓD: ${c.codigo} | ${c.descricao} | APP: ${c.aplicacao.substring(0, 120)}...\n`;
                 });
             } else {
-                contextInjection += `[CATÁLOGO] Nenhuma peça encontrada contendo simultaneamente: ${cleanTerms.join(", ")}.\n`;
+                contextInjection += `[CATÁLOGO] Nenhuma peça encontrada combinando os termos: ${cleanTerms.join(", ")}.\n`;
             }
 
             const prompt = `${contextInjection}\n\nPERGUNTA: ${text}`;
