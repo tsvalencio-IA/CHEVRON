@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>thIAguinho Soluções - V8 FINAL INTEGRAL</title>
+    <title>thIAguinho V9 - EXTRAÇÃO TOTAL</title>
     
     <script src="https://aframe.io/releases/1.4.2/aframe.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/mind-ar@1.2.2/dist/mindar-image-aframe.prod.js"></script>
@@ -17,7 +17,7 @@
         /* ESTRUTURA BASE */
         html, body { margin: 0; padding: 0; width: 100%; height: 100%; overflow: hidden; background: transparent !important; font-family: 'Roboto', sans-serif; }
         
-        /* 1. BARRA DE DIAGNÓSTICO (A VERDADE VISUAL) */
+        /* 1. BARRA DE DIAGNÓSTICO */
         #system-status {
             position: fixed; top: 0; left: 0; width: 100%; 
             background: rgba(0,0,0,0.85); color: #facc15; 
@@ -28,7 +28,7 @@
         .status-ok { color: #4ade80 !important; border-bottom-color: #4ade80 !important; }
         .status-err { color: #f87171 !important; border-bottom-color: #f87171 !important; }
 
-        /* 2. BOTÃO VOLTAR (RESTAURADO) */
+        /* 2. BOTÃO VOLTAR */
         #backBtn {
             position: fixed; top: 40px; left: 15px; 
             width: 45px; height: 45px; border-radius: 50%;
@@ -40,12 +40,12 @@
         }
         #backBtn:active { transform: scale(0.9); }
 
-        /* 3. MIRA / SCAN OVERLAY (RESTAURADO) */
+        /* 3. MIRA / SCAN OVERLAY */
         #scan-overlay {
             position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
             width: 70vw; height: 70vw; max-width: 300px; max-height: 300px;
             border: 4px solid rgba(255, 255, 255, 0.5); border-radius: 20px;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* Efeito escurecer ao redor */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); 
             z-index: 5000; pointer-events: none;
             display: flex; align-items: center; justify-content: center;
         }
@@ -57,7 +57,7 @@
         }
         .hidden { display: none !important; }
 
-        /* 4. INTERFACE DE CHAT (UI LAYER) */
+        /* 4. INTERFACE DE CHAT */
         #ui-layer { position: fixed; bottom: 0; left: 0; width: 100%; height: 100%; pointer-events: none; display: flex; flex-direction: column; justify-content: flex-end; z-index: 10000; }
         .chat-container { pointer-events: auto; background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.0) 100%); padding: 15px; display: flex; flex-direction: column; gap: 10px; padding-bottom: 30px; }
         #chat-display { max-height: 40vh; overflow-y: auto; color: white; text-shadow: 1px 1px 2px black; margin-bottom: 10px; font-size: 14px; scroll-behavior: smooth; }
@@ -83,7 +83,7 @@
 </head>
 <body>
 
-    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO SISTEMA...</div>
+    <div id="system-status"><i class='bx bx-loader-alt bx-spin'></i> INICIANDO VARREDURA DE DADOS...</div>
 
     <button id="backBtn" onclick="window.location.href='index.html'"><i class='bx bx-arrow-back'></i></button>
 
@@ -94,7 +94,7 @@
             <div id="chat-display"></div>
             <div class="controls">
                 <button id="micBtn" class="icon-btn" disabled><i class='bx bxs-microphone'></i></button>
-                <input type="text" id="userInput" placeholder="Carregando Base de Dados..." autocomplete="off" disabled>
+                <input type="text" id="userInput" placeholder="Aguarde Carregamento Total..." autocomplete="off" disabled>
                 <button id="sendBtn" class="icon-btn" disabled><i class='bx bxs-send'></i></button>
             </div>
         </div>
@@ -111,7 +111,7 @@
     </a-scene>
 
     <script>
-        // 1. CONFIGURAÇÃO FIREBASE (PRODUÇÃO)
+        // 1. CONFIGURAÇÃO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyB5JpYm8l0AlF5ZG3HtkyFZgmrpsUrDhv0",
             authDomain: "dashboard-oficina-pro.firebaseapp.com",
@@ -133,21 +133,37 @@
         const micBtn = document.getElementById('micBtn');
         const overlay = document.getElementById('scan-overlay');
 
-        // 3. CARREGAMENTO BLINDADO DE DADOS (Compatível com o seu JSON exportado)
+        // --- FUNÇÃO DE EXTRAÇÃO PROFUNDA (RESOLVE O PROBLEMA DAS 893 PEÇAS) ---
+        function extractAllParts(node) {
+            let extracted = new Map(); // Usa Map para evitar duplicatas pelo código
+
+            function scan(obj) {
+                if (!obj || typeof obj !== 'object') return;
+
+                // Se o objeto for uma peça válida (tem codigo e descricao)
+                if (obj.codigo && obj.descricao) {
+                    const cleanCode = String(obj.codigo).trim().toUpperCase();
+                    if (!extracted.has(cleanCode)) {
+                        extracted.set(cleanCode, obj);
+                    }
+                    // Não para aqui, pois pode haver aninhamento estranho
+                }
+
+                // Continua escaneando filhos (Arrays ou Objetos)
+                Object.values(obj).forEach(child => scan(child));
+            }
+
+            scan(node);
+            return Array.from(extracted.values());
+        }
+
+        // 3. CARREGAMENTO BLINDADO DE DADOS
         db.ref('catalogs').on('value', (snapshot) => {
             const data = snapshot.val();
             
             if (data) {
-                // ANÁLISE DE ESTRUTURA DO DADO RECEBIDO
-                if (Array.isArray(data)) {
-                    // Se já for uma lista [{}, {}]
-                    partsCatalog = data;
-                } else if (typeof data === 'object') {
-                    // SE FOR UM DICIONÁRIO {"DS_001": {}, "DS_002": {}} (O CASO DO SEU ARQUIVO)
-                    // Object.values transforma isso em uma lista [{}, {}] ignorando as chaves DS_XXX
-                    partsCatalog = Object.values(data);
-                }
-                
+                // USA A EXTRAÇÃO PROFUNDA PARA PEGAR TUDO, NÃO IMPORTA A ESTRUTURA
+                partsCatalog = extractAllParts(data);
                 checkReadiness();
             } else {
                 statusEl.innerText = "ERRO: CÉREBRO VAZIO! BANCO DE DADOS SEM PEÇAS.";
@@ -155,7 +171,7 @@
             }
         });
 
-        // Carrega Histórico de Serviços (Memória do Veículo)
+        // Carrega Histórico de Serviços (INTACTO)
         db.ref('serviceOrders').on('value', (snapshot) => {
             const data = snapshot.val();
             if (data) workshopData = Object.values(data);
@@ -163,10 +179,10 @@
 
         function checkReadiness() {
             if (partsCatalog.length > 0) {
-                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA OPERACIONAL: ${partsCatalog.length} PEÇAS CARREGADAS`;
+                statusEl.innerHTML = `<i class='bx bxs-brain'></i> SISTEMA TOTAL: ${partsCatalog.length} PEÇAS ATIVAS`;
                 statusEl.className = "status-ok";
                 inputEl.disabled = false; sendBtn.disabled = false; micBtn.disabled = false;
-                inputEl.placeholder = "Qual a dúvida técnica ou peça?";
+                inputEl.placeholder = "Pode perguntar ao thIAguinho...";
             }
         }
 
@@ -243,10 +259,9 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             if(!text.trim()) return;
             
             // --- MODO PERITO (Busca Direta por Código) ---
-            // Se o usuário digitar "3008" ou "DS 3008", mostra o dado cru.
             if (/^\d+$/.test(text) || /^DS\s*\d+$/i.test(text)) {
                 const codeSearch = text.toUpperCase().replace("DS", "").trim();
-                const found = partsCatalog.find(p => p.codigo && p.codigo.includes(codeSearch));
+                const found = partsCatalog.find(p => p.codigo && String(p.codigo).includes(codeSearch));
                 addMessage("Você", text, "msg-user");
                 if (found) {
                     addMessage("SISTEMA", `<div class="debug-info"><strong>DADO BRUTO ENCONTRADO:</strong><br>CÓD: ${found.codigo}<br>DESC: ${found.descricao}<br>APP: ${found.aplicacao}</div>`, "msg-ai");
@@ -279,15 +294,14 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 contextInjection += `[HISTÓRICO REAL DO VEÍCULO]\n${dossie}\n\n`;
             }
 
-            // B. BUSCA NO CATÁLOGO (Cérebro)
+            // B. BUSCA NO CATÁLOGO (Cérebro - AGORA COM TUDO)
             const terms = searchTerm.split(" ").filter(t => t.length > 2);
             
-            // Filtro Robusto: Busca código, descrição OU palavras-chave na aplicação
             const candidatos = partsCatalog.filter(p => {
                 if(!p.codigo) return false;
                 const fullText = (p.codigo + " " + p.descricao + " " + p.aplicacao).toUpperCase();
                 return fullText.includes(searchTerm) || terms.every(term => fullText.includes(term));
-            }).slice(0, 8); // Top 8 resultados
+            }).slice(0, 8); 
 
             if (candidatos.length > 0) {
                 contextInjection += `[DADOS OFICIAIS DO CATÁLOGO DS]\n`;
@@ -323,7 +337,6 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
             div.className = `msg ${className}`;
             div.innerHTML = `<strong>${sender}:</strong><br>${text}`;
             document.getElementById('chat-display').appendChild(div);
-            // Auto scroll
             const display = document.getElementById('chat-display');
             display.scrollTop = display.scrollHeight;
             return div;
@@ -352,7 +365,7 @@ SEJA O ESPECIALISTA. NÃO SEJA UM ROBÔ GENÉRICO.
                 u.voice = maleVoice;
                 u.pitch = 0.9; 
             } else {
-                u.pitch = 0.6; // Força tom grave se só tiver voz feminina
+                u.pitch = 0.6; // Força tom grave
             }
 
             u.onstart = () => { isSpeaking = true; if(isTargetVisible) videoEl.play(); };
